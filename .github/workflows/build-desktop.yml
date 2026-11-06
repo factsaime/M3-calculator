@@ -45,6 +45,10 @@ jobs:
           mkdir -p desktop/app
           cp app/src/main/assets/index.html desktop/app/index.html
 
+      - name: Generate icon
+        working-directory: desktop
+        run: node tools/make-icon.js
+
       - name: Install dependencies
         working-directory: desktop
         run: npm install --no-audit --no-fund
