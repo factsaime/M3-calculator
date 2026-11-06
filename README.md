@@ -1,2 +1,27 @@
-# M3-calculator
-M3-calculator. Free, fast, so more functions.
+# Калькулятор M3 → APK
+
+Обёртка на WebView: весь интерфейс лежит в `app/src/main/assets/index.html`.
+Меняешь только этот файл — остальное трогать не нужно.
+
+## Как получить APK
+
+1. Заведи пустой репозиторий на GitHub (можно приватный).
+2. Залей туда все файлы этого проекта (структуру папок сохранить).
+3. Открой вкладку **Actions** → workflow **Build APK** → **Run workflow**.
+   (При пуше в `main` он запустится сам.)
+4. Через 2–4 минуты открой завершённый запуск → внизу **Artifacts** →
+   скачай `calculator-apk.zip` → внутри `app-debug.apk`.
+5. Установи APK на телефон (разреши установку из этого источника).
+
+APK подписан debug-ключом — для личного использования этого достаточно.
+
+## Что можно поменять
+
+| Что | Где |
+|---|---|
+| Название приложения | `app/src/main/AndroidManifest.xml` → `android:label` |
+| Иконка | добавить `mipmap` и `android:icon` в манифест |
+| Интерфейс | `app/src/main/assets/index.html` |
+| ID пакета, версия | `app/build.gradle.kts` |
+
+Сборка идёт с AGP 8.5.2 / Gradle 8.9 / JDK 17 / compileSdk 34, minSdk 24.

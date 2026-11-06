@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FBF6FC">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='30' fill='%238A4FC4'/%3E%3Ctext x='50' y='66' font-size='56' text-anchor='middle' fill='white' font-family='sans-serif'%3E%3D%3C/text%3E%3C/svg%3E">
+<script>try{var t=localStorage.getItem("theme");if(!t)t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.dataset.theme=t}catch(e){}</script>
+<title>Калькулятор</title>
+<style>
+:root{--bg:#FBF6FC;--surface:#F6EEF9;--high:#EFE4F5;--primary:#8A4FC4;--on-primary:#fff;--pc:#EBDDFB;--on-pc:#3E1A66;--sc:#FFDCEB;--on-sc:#5C2141;--text:#2E2538;--var:#6E6280;--num:#fff;--err:#B3261E;color-scheme:light}
+:root[data-theme=dark]{--bg:#16111B;--surface:#1F1827;--high:#2B2234;--primary:#D4B3FF;--on-primary:#3B1A66;--pc:#4A3270;--on-pc:#EBDDFB;--sc:#5C2B45;--on-sc:#FFD9E8;--text:#EAE0F0;--var:#B3A6C2;--num:#251D2E;--err:#F2B8B5;color-scheme:dark}
+:root[data-theme=oled]{--bg:#000;--surface:#0A0710;--high:#17121D;--primary:#D4B3FF;--on-primary:#3B1A66;--pc:#3A2760;--on-pc:#EBDDFB;--sc:#4A2238;--on-sc:#FFD9E8;--text:#EEE6F3;--var:#A89BB8;--num:#100B16;--err:#F2B8B5;color-scheme:dark}
+:root[data-theme=sunset]{--bg:#1E1218;--surface:#2A1A22;--high:#38222D;--primary:#FFB59A;--on-primary:#4A1F0E;--pc:#6B3322;--on-pc:#FFDBCF;--sc:#5A2A4A;--on-sc:#FFD6F0;--text:#F5E1E6;--var:#C9A9B3;--num:#301E27;--err:#FFB4AB;color-scheme:dark}
+*{box-sizing:border-box;margin:0;padding:0}
+html{height:100%}
+body{background:var(--bg);font-family:"Roboto","Segoe UI",system-ui,sans-serif;color:var(--text);display:flex;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px calc(env(safe-area-inset-bottom,0px) + 12px);min-height:100vh;min-height:100dvh}
+.calc{margin:auto;width:100%;max-width:380px;background:var(--surface);border-radius:36px;padding:20px;box-shadow:0 8px 24px rgba(138,79,196,.12)}
+.display{touch-action:pan-y;-webkit-user-select:none;user-select:none;padding:10px 12px 14px;display:flex;flex-direction:column;border-radius:24px;background:var(--high);margin-bottom:14px;overflow:hidden}
+.bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.expr{font-size:18px;color:var(--var);min-height:24px;text-align:right;white-space:nowrap;overflow-x:auto;scrollbar-width:none}
+.result{min-height:60px;font-size:52px;line-height:1.15;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.result.error{color:var(--err);font-size:34px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.sci{display:none;margin-bottom:12px}
+.sci.on{display:grid}
+button{touch-action:manipulation;font:inherit;border:none;cursor:pointer;height:72px;border-radius:24px;font-size:24px;font-weight:500;background:var(--high);color:var(--text);transition:transform .12s,border-radius .25s,filter .2s;-webkit-tap-highlight-color:transparent;user-select:none}
+button:hover{filter:brightness(.97)}
+button:active{transform:scale(.92);border-radius:36px}
+button:focus-visible{outline:3px solid var(--primary);outline-offset:2px}
+.num{background:var(--num);font-size:28px;font-weight:400}
+.op{background:var(--pc);color:var(--on-pc);font-size:28px}
+.fn{background:var(--sc);color:var(--on-sc)}
+.s{height:46px;font-size:18px;background:var(--pc);color:var(--on-pc);border-radius:18px}
+.eq{background:var(--primary);color:var(--on-primary);font-size:32px;border-radius:0;width:72px;height:72px;justify-self:center}
+.eq:active{border-radius:0}
+.chip{height:40px;padding:0 16px;border-radius:20px;font-size:14px;background:var(--pc);color:var(--on-pc);display:flex;align-items:center;gap:8px}
+.chip[aria-pressed=true]{background:var(--primary);color:#fff}
+.bs{height:40px;width:44px;border-radius:20px;background:var(--sc);color:var(--on-sc);display:grid;place-items:center}
+.bs svg{width:22px;height:22px}
+.th{background:var(--pc);color:var(--on-pc)}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:24px;z-index:10}
+.scrim[hidden]{display:none}
+.dlg{width:100%;max-width:340px;max-height:90vh;max-height:90dvh;overflow-y:auto;background:var(--surface);color:var(--text);border-radius:28px;padding:24px 16px 16px;box-shadow:0 12px 32px rgba(0,0,0,.3)}
+.dlg h2{font-size:22px;font-weight:400;padding:0 8px 12px}
+.opt{display:flex;align-items:center;gap:14px;width:100%;height:60px;padding:0 12px;border-radius:20px;background:transparent;font-size:16px;font-weight:400;text-align:left;margin-bottom:4px}
+.opt[aria-checked=true]{background:var(--pc);color:var(--on-pc)}
+.sw{width:36px;height:36px;border-radius:50%;flex:none;border:2px solid var(--var);display:block}
+.chk{margin-left:auto;font-size:20px}
+.mem{margin-bottom:12px;gap:12px}
+.calc:has(.sci.on) #main button{height:58px}
+.calc:has(.sci.on) #main .eq{width:58px;height:58px}
+.result{cursor:pointer}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);padding:12px 20px;border-radius:16px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:20;white-space:nowrap}
+.toast.on{opacity:1;transform:translateX(-50%)}
+.hlist{max-height:50vh;overflow-y:auto}
+.hi{display:block;width:100%;height:auto;padding:10px 14px;border-radius:16px;background:transparent;text-align:right;margin-bottom:4px;font-weight:400}
+.hi small{display:block;font-size:14px;color:var(--var)}
+.hi b{font-size:22px;font-weight:400}
+.hi:hover{background:var(--high)}
+.hempty{padding:24px;text-align:center;color:var(--var)}
+.calc[data-shape] :is(#main button:not(.eq),#sci .s,#mem .m){border-radius:var(--cbr)}
+.shapes{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.opt.chipo{width:auto;height:40px;padding:0 16px;border-radius:20px;background:var(--high);margin:0;font-size:14px}
+.opt.chipo[aria-checked=true]{background:var(--pc)}
+.crow{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;font-size:16px}
+.crow input{width:56px;height:36px;border:none;border-radius:12px;background:none;padding:0;cursor:pointer}
+.cdlg{max-height:85vh;overflow-y:auto}
+select.gin{appearance:auto}
+.gt{display:grid;gap:6px;margin-top:12px;align-items:center}
+.gt .gin{height:40px;margin:0;padding:0 6px;text-align:center;font-size:16px;min-width:0}
+.gl{font-size:16px;color:var(--var);text-align:center}
+.gy{height:40px;border-radius:12px;background:var(--pc);color:var(--on-pc);display:grid;place-items:center;font-size:16px;overflow:hidden}
+.gqr{padding:10px 12px 0;font-size:16px}
+.gqi{display:flex;align-items:center;gap:8px;padding:8px 12px 0;font-size:16px}
+.gqi .gin{width:90px;height:40px;margin:0;padding:0 10px;font-size:16px;flex:none}
+.gqi span:last-child{flex:1}
+.frow{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.frow .gin{margin:0;flex:1;min-width:0}
+.fdot{width:14px;height:14px;border-radius:50%;flex:none}
+.fbtn{width:40px;height:40px;border-radius:12px;background:var(--pc);color:var(--on-pc);flex:none;font-size:16px;padding:0}
+.fbtn.fdel{background:var(--sc);color:var(--on-sc)}
+.fbtn:disabled{opacity:.4}
+.trow{display:grid;grid-template-columns:1fr 1fr;gap:8px;height:auto;width:100%;padding:9px 12px;border-radius:14px;background:transparent;text-align:center;font-size:16px;margin-bottom:2px}
+.trow:hover{background:var(--high)}
+.trow:disabled{opacity:.45}
+.trow.thead{color:var(--var);font-size:14px;background:none;cursor:default}
+.sci{grid-template-columns:1fr}
+.sgrp{margin-bottom:10px}
+.ghead{height:44px;width:100%;border-radius:16px;background:var(--high);color:var(--text);font-size:15px;font-weight:500;display:flex;align-items:center;justify-content:space-between;padding:0 16px;margin-bottom:8px}
+.ghead::after{content:"▾";font-size:16px;transition:transform .2s}
+.ghead[aria-expanded=false]::after{transform:rotate(-90deg)}
+.gbody{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.gbody[hidden]{display:none}
+.gy{font-size:14px;white-space:nowrap;text-overflow:ellipsis;padding:0 4px}
+button:disabled{opacity:.45;cursor:default}
+body.exam #hb,body.exam #hexp,body.exam #kbtn,body.exam #gpng,body.exam #gkind{display:none !important}
+body.exam .display{box-shadow:inset 0 0 0 2px var(--primary)}
+@keyframes wig{from{transform:rotate(-1.2deg)}to{transform:rotate(1.2deg)}}
+.calc.edit :is(#main,#sci,#mem) button{animation:wig .25s infinite alternate}
+.calc.edit .sel{outline:3px solid var(--primary);outline-offset:2px;filter:brightness(1.12);animation:none;transform:scale(1.08)}
+.edbar{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);max-width:380px;margin:0 auto;background:var(--text);color:var(--bg);border-radius:20px;padding:10px 10px 10px 18px;display:flex;align-items:center;gap:12px;font-size:14px;z-index:15}
+.edbar[hidden]{display:none}
+.edbar button{height:40px;padding:0 18px;border-radius:20px;font-size:14px;background:var(--primary);color:var(--on-primary);flex:none}
+.m{height:36px;font-size:14px;border-radius:14px;background:var(--high);color:var(--on-pc)}
+.m:disabled{opacity:.4;cursor:default}
+.wide{grid-column:span 3}
+.gdlg{max-width:380px}
+.gin{width:100%;height:48px;border-radius:16px;border:1px solid var(--var);background:var(--high);color:var(--text);padding:0 14px;font-size:18px;margin-bottom:12px;font-family:inherit}
+.gin:focus{outline:2px solid var(--primary);border-color:transparent}
+canvas{width:100%;height:240px;border-radius:20px;background:var(--high);touch-action:none;display:block;cursor:grab}
+.grow{display:flex;gap:8px;margin-top:12px}
+.grow button{flex:1;height:44px;font-size:16px;border-radius:16px;background:var(--pc);color:var(--on-pc)}
+@media(max-width:360px){.result{font-size:42px}button{height:62px}.eq{width:62px;height:62px}.s{height:46px}.calc{padding:14px}}
+</style>
+</head>
+<body>
+<main class="calc" aria-label="Калькулятор">
+  <section class="display" aria-live="polite">
+    <div class="bar">
+      <button class="chip" id="mode" aria-pressed="false" title="Научный режим">ƒ Научный</button>
+      <button class="bs th" id="ub" aria-label="Единицы"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h13M16 3l4 4-4 4M17 17H4M8 13l-4 4 4 4"/></svg></button>
+      <button class="bs th" id="hb" aria-label="История"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button>
+      <button class="bs th" id="th" aria-label="Сменить тему"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.3-.5-.8-.5-1.200 0-1.100.9-2 2-2h2.400c2 0 3.600-1.600 3.600-3.600C21 6.600 17 3 12 3z"/><circle cx="7.500" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7" r="1"/></svg></button>
+      <button class="bs" id="bs" aria-label="Стереть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 5H9l-6 7 6 7h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1z"/><path d="M17 9.5l-5 5M12 9.5l5 5"/></svg></button>
+    </div>
+    <div class="expr" id="expr"></div>
+    <div class="result" id="result">0</div>
+  </section>
+
+  <div class="grid mem" id="mem">
+    <button class="m" id="mc" data-m="c">MC</button><button class="m" id="mr" data-m="r">MR</button><button class="m" data-m="+">M+</button><button class="m" data-m="-">M−</button>
+  </div>
+  <div class="grid sci" id="sci">
+    <button class="s" data-key="sin(">sin</button><button class="s" data-key="cos(">cos</button><button class="s" data-key="tan(">tan</button><button class="s" data-key="sqrt(">√</button>
+    <button class="s" data-key="asin(">sin⁻¹</button><button class="s" data-key="acos(">cos⁻¹</button><button class="s" data-key="atan(">tan⁻¹</button><button class="s" data-key="^">xʸ</button>
+    <button class="s" data-key="cot(">cot</button><button class="s" data-key="acot(">cot⁻¹</button><button class="s" data-key="sec(">sec</button><button class="s" data-key="csc(">csc</button>
+    <button class="s" data-key="ln(">ln</button><button class="s" data-key="log(">log</button><button class="s" data-key="pi">π</button><button class="s" data-key="E">e</button>
+    <button class="s" data-key="^2">x²</button><button class="s" data-key="!">n!</button><button class="s" data-key="^(-1)">1/x</button><button class="s" id="deg">DEG</button>
+    <button class="s" data-key="sinh(">sinh</button><button class="s" data-key="cosh(">cosh</button><button class="s" data-key="tanh(">tanh</button><button class="s" data-key="abs(">|x|</button><button class="s" data-key="ncr(">nCr</button><button class="s" data-key="npr(">nPr</button><button class="s" data-key="gcd(">НОД</button><button class="s" data-key="lcm(">НОК</button><button class="s" data-key="," style="grid-column:span 4">,</button><button class="s" id="stbtn" style="grid-column:span 4">Статистика</button><button class="s" id="fbtn" style="grid-column:span 4">Кредит и вклад</button><button class="s" id="qbtn" style="grid-column:span 4">Квадратное уравнение</button><button class="s" id="dfbtn" style="grid-column:span 4">Дроби</button><button class="s" id="tbbtn" style="grid-column:span 4">Таблица значений</button><button class="s" id="sysbtn" style="grid-column:span 4">Системы уравнений</button><button class="s" id="dvbtn" style="grid-column:span 4">Производная и интеграл</button><button class="s" id="kbtn" style="grid-column:span 4">Константы</button>
+    <button class="s" data-key="x">x</button><button class="s" data-key=")">)</button><button class="s wide" id="gbtn">График y = f(x)</button>
+  </div>
+
+  <div class="grid" id="main">
+    <button class="fn" data-action="clear">AC</button>
+    <button class="fn" data-key="(">(</button>
+    <button class="fn" id="sgn" aria-label="Сменить знак">±</button>
+    <button class="op" data-key="/">÷</button>
+    <button class="num" data-key="7">7</button><button class="num" data-key="8">8</button><button class="num" data-key="9">9</button><button class="op" data-key="*">×</button>
+    <button class="num" data-key="4">4</button><button class="num" data-key="5">5</button><button class="num" data-key="6">6</button><button class="op" data-key="-">−</button>
+    <button class="num" data-key="1">1</button><button class="num" data-key="2">2</button><button class="num" data-key="3">3</button><button class="op" data-key="+">+</button>
+    <button class="fn" data-key="%">%</button><button class="num" data-key="0">0</button><button class="num" data-key=".">,</button>
+    <button class="eq" id="eq" data-action="equals" aria-label="Равно">=</button>
+  </div>
+</main>
+<div class="scrim" id="hscrim" hidden><div class="dlg" role="dialog" aria-modal="true" aria-label="История"><h2>История</h2><div class="hlist" id="hlist"></div><div class="grow"><button id="hexp">В файл</button><button id="hclr">Очистить</button><button id="hc">Закрыть</button></div></div></div>
+<div class="scrim" id="uscrim" hidden><div class="dlg" role="dialog" aria-modal="true" aria-label="Единицы"><h2>Единицы измерения</h2><select class="gin" id="ucat" aria-label="Категория"></select><input class="gin" id="uin" inputmode="decimal" autocomplete="off" aria-label="Значение"><select class="gin" id="ufrom" aria-label="Из"></select><input class="gin" id="uout" readonly aria-label="Результат"><select class="gin" id="uto" aria-label="В"></select><div class="grow"><button id="uswap" aria-label="Поменять">⇅</button><button id="usign" aria-label="Знак">±</button><button id="uuse">Вставить</button><button id="uc">Готово</button></div></div></div>
+<div class="scrim" id="cscrim" hidden><div class="dlg cdlg" role="dialog" aria-modal="true" aria-label="Кнопки"><h2>Кнопки</h2><div class="grow" style="margin:0 0 8px"><button id="lbtn">Изменить расположение кнопок</button></div><div id="cbox"></div><div class="grow"><button id="crst">Сбросить</button><button id="cc">Готово</button></div></div></div>
+<div class="edbar" id="edbar" hidden><span>Нажмите две кнопки, чтобы поменять их местами</span><button id="edone">Готово</button></div>
+<div class="scrim" id="stscrim" hidden><div class="dlg" role="dialog" aria-modal="true" aria-label="Статистика"><h2>Статистика</h2><input class="gin" id="stin" placeholder="2; 4; 6; 8,5" autocomplete="off" aria-label="Числа"><div class="hlist" id="stout"></div><div class="grow"><button id="stc">Готово</button></div></div></div>
+<div class="scrim" id="fscrim" hidden><div class="dlg cdlg" role="dialog" aria-modal="true" aria-label="Кредит и вклад"><h2>Кредит и вклад</h2>
+<div style="font-size:14px;color:var(--var);padding:4px 8px">Кредит (аннуитет)</div>
+<input class="gin" id="ls" placeholder="Сумма кредита" inputmode="decimal" autocomplete="off" aria-label="Сумма кредита"><input class="gin" id="lr" placeholder="Ставка, % годовых" inputmode="decimal" autocomplete="off" aria-label="Ставка"><input class="gin" id="ln" placeholder="Срок, месяцев" inputmode="numeric" autocomplete="off" aria-label="Срок в месяцах">
+<div style="font-size:14px;color:var(--var);padding:4px 8px">Вклад (ежемесячная капитализация)</div>
+<input class="gin" id="ds" placeholder="Сумма вклада" inputmode="decimal" autocomplete="off" aria-label="Сумма вклада"><input class="gin" id="dr" placeholder="Ставка, % годовых" inputmode="decimal" autocomplete="off" aria-label="Ставка вклада"><input class="gin" id="dy" placeholder="Срок, лет" inputmode="decimal" autocomplete="off" aria-label="Срок вклада в годах">
+<div class="hlist" id="fout"></div><div class="grow"><button id="fc">Готово</button></div></div></div>
+<div class="scrim" id="qscrim" hidden><div class="dlg" role="dialog" aria-modal="true" aria-label="Квадратное уравнение"><h2>Квадратное уравнение</h2>
+<div style="font-size:15px;color:var(--var);padding:0 8px 8px">a·x² + b·x + c = 0. Пустое поле считается нулём.</div>
+<div class="grow" style="margin:0 0 8px"><input class="gin" id="qa" placeholder="a" inputmode="decimal" autocomplete="off" aria-label="a" style="flex:1;margin:0;text-align:center"><input class="gin" id="qb" placeholder="b" inputmode="decimal" autocomplete="off" aria-label="b" style="flex:1;margin:0;text-align:center"><input class="gin" id="qc" placeholder="c" inputmode="decimal" autocomplete="off" aria-label="c" style="flex:1;margin:0;text-align:center"></div>
+<div id="qhint" style="font-size:14px;color:var(--var);padding:0 8px 8px"></div>
+<div class="hlist" id="qout"></div>
+<div class="grow"><button id="qgr">На график</button><button id="qc2">Готово</button></div></div></div>
+<div class="scrim" id="dfscrim" hidden><div class="dlg" role="dialog" aria-modal="true" aria-label="Дроби"><h2>Дроби</h2>
+<div style="font-size:15px;color:var(--var);padding:0 8px 8px">Например: 3/4 + 1/6. Результат считается точно, без округления.</div>
+<input class="gin" id="dfin" placeholder="3/4 + 1/6" inputmode="text" autocomplete="off" aria-label="Выражение">
+<div id="dfhint" style="font-size:14px;color:var(--var);padding:8px 8px 0"></div>
+<div class="hlist" id="dfout"></div>
+<div class="grow"><button id="dfc">Готово</button></div></div></div>
+<div class="scrim" id="tbscrim" hidden><div class="dlg cdlg" role="dialog" aria-modal="true" aria-label="Таблица значений"><h2>Таблица значений</h2>
+<input class="gin" id="tbf" placeholder="y = x^2 - 4" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Формула">
+<div class="grow" style="margin:0 0 8px"><input class="gin" id="tbfrom" value="-5" placeholder="от" inputmode="decimal" autocomplete="off" aria-label="От" style="flex:1;margin:0;text-align:center"><input class="gin" id="tbto" value="5" placeholder="до" inputmode="decimal" autocomplete="off" aria-label="До" style="flex:1;margin:0;text-align:center"><input class="gin" id="tbstep" value="1" placeholder="шагает" inputmode="decimal" autocomplete="off" aria-label="Шаг" style="flex:1;margin:0;text-align:center"></div>
+<div id="tbhint" style="font-size:14px;color:var(--var);padding:0 8px 8px"></div>
+<div class="hlist" id="tbout"></div>
+<div class="grow"><button id="tbgr">На график</button><button id="tbc">Готово</button></div></div></div>
+<div class="scrim" id="sysd" hidden><div class="dlg cdlg" role="dialog" aria-modal="true" aria-label="Система уравнений"><h2>Система уравнений</h2>
+<div style="font-size:14px;color:var(--var);padding:0 8px 8px">Каждое уравнение вида a·x + b·y = c. Пустое поле считается нулём.</div>
+<div class="grow" style="margin:0 0 8px"><input class="gin" id="sa1" placeholder="a" inputmode="decimal" autocomplete="off" aria-label="a1" style="flex:1;margin:0;text-align:center"><input class="gin" id="sb1" placeholder="b" inputmode="decimal" autocomplete="off" aria-label="b1" style="flex:1;margin:0;text-align:center"><input class="gin" id="sc1" placeholder="c" inputmode="decimal" autocomplete="off" aria-label="c1" style="flex:1;margin:0;text-align:center"></div>
+<div class="grow" style="margin:0 0 8px"><input class="gin" id="sa2" placeholder="a" inputmode="decimal" autocomplete="off" aria-label="a2" style="flex:1;margin:0;text-align:center"><input class="gin" id="sb2" placeholder="b" inputmode="decimal" autocomplete="off" aria-label="b2" style="flex:1;margin:0;text-align:center"><input class="gin" id="sc2" placeholder="c" inputmode="decimal" autocomplete="off" aria-label="c2" style="flex:1;margin:0;text-align:center"></div>
+<div id="syshint" style="font-size:14px;color:var(--var);padding:0 8px 8px"></div>
+<div class="hlist" id="sysout"></div>
+<div class="grow"><button id="sysgr">На график</button><button id="sysc">Готово</button></div></div></div>
+<div class="scrim" id="dvscrim" hidden><div class="dlg cdlg" role="dialog" aria-modal="true" aria-label="Производная и интеграл"><h2>Производная и интеграл</h2>
+<input class="gin" id="dvf" placeholder="f(x), например x^2" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Функция">
+<div class="grow" style="margin:0 0 8px"><input class="gin" id="dvx0" value="1" placeholder="x₀" inputmode="decimal" autocomplete="off" aria-label="x₀" style="flex:1;margin:0;text-align:center"><input class="gin" id="dva" value="0" placeholder="от" inputmode="decimal" autocomplete="off" aria-label="От" style="flex:1;margin:0;text-align:center"><input class="gin" id="dvb" value="1" placeholder="до" inputmode="decimal" autocomplete="off" aria-label="До" style="flex:1;margin:0;text-align:center"></div>
+<div style="font-size:14px;color:var(--var);padding:0 8px 8px">Производная считается в точке x₀, интеграл — на отрезке от «от» до «до».</div>
+<div id="dvhint" style="font-size:14px;color:var(--var);padding:0 8px 8px"></div>
+<div class="hlist" id="dvout"></div>
+<div class="grow"><button id="dvgr">Касательная на графике</button><button id="dvc">Готово</button></div></div></div>
+<div class="scrim" id="kscrim" hidden><div class="dlg cdlg" role="dialog" aria-modal="true" aria-label="Физические константы"><h2>Константы</h2>
+<input class="gin" id="kq" placeholder="Поиск: скорость света, G, заряд…" autocomplete="off" aria-label="Поиск">
+<div style="font-size:14px;color:var(--var);padding:6px 8px">Тап вставляет значение в калькулятор. Если уже есть выражение, оно умножится на константу.</div>
+<div class="hlist" id="kout"></div>
+<div class="grow"><button id="kc">Готово</button></div></div></div>
+<div class="toast" id="toast" role="status"></div>
+<div class="scrim" id="gscrim" hidden><div class="dlg gdlg" role="dialog" aria-modal="true" aria-label="График"><h2>График функции</h2><input class="gin" id="gin" value="sin(x)" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="y ="><div id="flist"></div><div class="grow" style="margin:0 0 8px"><button id="fadd">+ функция</button></div><div class="grow" style="margin:0 0 8px"><button id="fint">Точки пересечения</button></div><div class="hlist" id="gint"></div><canvas id="cv"></canvas><div class="grow"><button id="gzo">−</button><button id="gzi">+</button><button id="gr">Сброс</button></div><div class="grow" style="margin:8px 0 0"><select class="gin" id="gthm" aria-label="Тема графика" style="flex:1;margin:0"></select></div>
+<div class="gqr" id="gkind" style="color:var(--var);font-size:15px;line-height:1.4"></div><div class="gqr" style="color:var(--var);font-size:13px">Углы на графике, в таблице и в производной — в радианах, даже если калькулятор в DEG.</div><div class="gt" id="gt"></div>
+<div class="grow" style="margin:8px 0 0"><button id="gtm">− столбец</button><button id="gtp">+ столбец</button></div>
+<div class="gqr" id="gq1"></div><div class="gqr" id="gq2"></div>
+<div class="gqi"><span>y =</span><input class="gin" id="gyv" value="6" inputmode="text" autocomplete="off" aria-label="Значение y"><span id="gxo"></span></div>
+<div class="gqi"><span>x =</span><input class="gin" id="gxv" value="2" inputmode="text" autocomplete="off" aria-label="Значение x"><span id="gyo"></span></div>
+<div class="grow"><button id="gpng">PNG</button><button id="gc">Готово</button></div></div></div>
+<div class="scrim" id="scrim" hidden><div class="dlg" role="dialog" aria-modal="true" aria-label="Тема оформления"><h2>Оформление</h2><div id="themes" role="radiogroup"></div><div class="grow" style="margin:8px 0"><button id="exbtn" aria-pressed="false">Режим экзамена: выкл</button></div><div class="grow"><button id="cbtn">Настроить кнопки</button></div></div></div>
+<script>
+const $=id=>document.getElementById(id);
+const exprEl=$("expr"),resultEl=$("result");
+let ex="",done=false,deg=true,X=null,mem=0;
+let theme;try{theme=localStorage.getItem("theme")}catch{}
+const THEMES=[{id:"light",n:"Светлая",c:["#FBF6FC","#8A4FC4"]},{id:"dark",n:"Тёмная",c:["#16111B","#D4B3FF"]},{id:"oled",n:"OLED",c:["#000","#D4B3FF"]},{id:"sunset",n:"Закат",c:["#1E1218","#FFB59A"]}];
+if(!THEMES.some(x=>x.id===theme))theme=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";
+const scrim=$("scrim"),list=$("themes");
+function closeDlg(){scrim.hidden=true}
+function buildList(){list.innerHTML="";THEMES.forEach(x=>{const b=document.createElement("button");b.className="opt";b.setAttribute("role","radio");b.setAttribute("aria-checked",x.id===theme);b.innerHTML=`<span class="sw" style="background:linear-gradient(135deg,${x.c[0]} 50%,${x.c[1]} 50%)"></span><span>${x.n}</span><span class="chk">${x.id===theme?"✓":""}</span>`;b.onclick=()=>{setTheme(x.id);closeDlg()};list.appendChild(b)})}
+scrim.addEventListener("click",e=>{if(e.target===scrim)closeDlg()});
+function setTheme(t,s=true){theme=t;document.documentElement.dataset.theme=t;const tm=document.querySelector('meta[name="theme-color"]');if(tm)tm.content=(THEMES.find(x=>x.id===t)||THEMES[0]).c[0];if(s)try{localStorage.setItem("theme",t)}catch{}buildList()}
+setTheme(theme,false);
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",e=>{let st=null;try{st=localStorage.getItem("theme")}catch{}if(!st)setTheme(e.matches?"dark":"light",false)});
+$("th").onclick=()=>{scrim.hidden=false};
+
+// волнистая форма (M3 «cookie») для «=»
+(function(){const p=[],N=240;for(let i=0;i<N;i++){const t=2*Math.PI*i/N,c=Math.cos(t),s=Math.sin(t),r=0.915+0.085*Math.cos(10*t);
+p.push((50+50*r*c).toFixed(2)+"% "+(50+50*r*s).toFixed(2)+"%")}
+$("eq").style.clipPath="polygon("+p.join(",")+")"})();
+
+const und=v=>{if(!Number.isFinite(v)||Math.abs(v)>1e14)throw 0;return v};
+const FN={sin:x=>deg?dSin(x):Math.sin(x),cos:x=>deg?dCos(x):Math.cos(x),tan:x=>und(deg?dTan(x):Math.tan(x)),
+asin:x=>Math.asin(x)*(deg?180/Math.PI:1),acos:x=>Math.acos(x)*(deg?180/Math.PI:1),atan:x=>Math.atan(x)*(deg?180/Math.PI:1),
+cot:x=>und(1/Math.tan(deg?x*Math.PI/180:x)),acot:x=>Math.atan2(1,x)*(deg?180/Math.PI:1),sec:x=>und(1/Math.cos(deg?x*Math.PI/180:x)),csc:x=>und(1/Math.sin(deg?x*Math.PI/180:x)),sinh:Math.sinh,cosh:Math.cosh,tanh:Math.tanh,abs:Math.abs,exp:Math.exp,
+ln:Math.log,log:Math.log10,sqrt:x=>{if(x<0)throw 0;return Math.sqrt(x)}};
+const dR=x=>((x%360)+360)%360;
+const dSin=x=>{const r=dR(x);if(r===0||r===180)return 0;if(r===90)return 1;if(r===270)return -1;return Math.sin(x*Math.PI/180)};
+const dCos=x=>{const r=dR(x);if(r===90||r===270)return 0;if(r===0)return 1;if(r===180)return -1;return Math.cos(x*Math.PI/180)};
+const dTan=x=>{const r=dR(x);if(r===0||r===180)return 0;if(r===90||r===270)return NaN;return Math.tan(x*Math.PI/180)};
+const CONST={pi:Math.PI,e:Math.E,E:Math.E};
+const ci=x=>{if(!Number.isInteger(x)||x<0)throw 0;return x};
+const gcd=(a,b)=>{if(!Number.isInteger(a)||!Number.isInteger(b))throw 0;a=Math.abs(a);b=Math.abs(b);while(b){[a,b]=[b,a%b]}return a};
+const BIN={ncr:(n,k)=>{ci(n);ci(k);if(k>n)return 0;let r=1;for(let i=1;i<=k;i++)r=r*(n-k+i)/i;return Math.round(r)},npr:(n,k)=>{ci(n);ci(k);if(k>n)return 0;let r=1;for(let i=0;i<k;i++)r*=n-i;return r},gcd,lcm:(a,b)=>{const g=gcd(a,b);return g?Math.abs(a*b)/g:0}};
+function fact(n){if(n<0||n>170||!Number.isInteger(n))throw 0;let r=1;for(let i=2;i<=n;i++)r*=i;return r}
+
+let TINY_KEEP=false;
+function evaluate(src){TINY_KEEP=/\de[+\-]?\d/.test(src);
+  const T=src.match(/\d*\.?\d+(?:e[+-]?\d+)?|sinh|cosh|tanh|asin|acos|atan|acot|sin|cos|tan|cot|sec|csc|sqrt|log|ln|abs|exp|ncr|npr|gcd|lcm|pi|[xeE]|[+\-*/()%^!,]/g);
+  if(!T||T.join("")!==src)throw 0;
+  let i=0;const pk=()=>T[i],nx=()=>T[i++];
+  const isId=t=>t&&/^[a-zA-Z]+$/.test(t);
+  function expr(){let v=term();while(pk()==="+"||pk()==="-"){const o=nx();let r=term();if(T[i-1]==="%")r=v*r;v=o==="+"?v+r:v-r}return v}
+  function term(){let v=unary();
+    while(pk()==="*"||pk()==="/"||pk()==="("||isId(pk())||(pk()&&/^[\d.]/.test(pk()))){
+      if(pk()==="*"||pk()==="/"){const o=nx(),r=unary();if(o==="/"&&r===0)throw 0;v=o==="*"?v*r:v/r}
+      else v*=unary()}
+    return v}
+  function unary(){if(pk()==="-"){nx();return -unary()}if(pk()==="+"){nx();return unary()}return pow()}
+  function pow(){const b=post();if(pk()==="^"){nx();return Math.pow(b,unary())}return b}
+  function post(){let v=prim();while(pk()==="%"||pk()==="!"){v=nx()==="%"?v/100:fact(v)}return v}
+  function prim(){const t=nx();
+    if(t==="("){const v=expr();if(nx()!==")")throw 0;return v}
+    if(isId(t)){if(t==="x"){if(X===null)throw 0;return X}if(t in CONST)return CONST[t];if(t in BIN){if(nx()!=="(")throw 0;const a=expr();if(nx()!==",")throw 0;const b=expr();if(nx()!==")")throw 0;return BIN[t](a,b)}if(!FN[t]||nx()!=="(")throw 0;const v=expr();if(nx()!==")")throw 0;return FN[t](v)}
+    const n=Number(t);if(t===undefined||isNaN(n))throw 0;return n}
+  const v=expr();if(i!==T.length)throw 0;return v}
+
+function fmt(n){if(!Number.isFinite(n))throw 0;
+  if(Math.abs(n)<1e-15&&!TINY_KEEP)n=0;
+  
+  const a=Math.abs(n);
+  if(a!==0&&(a>=1e12||a<1e-9))return parseFloat(n.toPrecision(7)).toExponential().replace(".",",");
+  return String(parseFloat(n.toPrecision(12))).replace(".",",")}
+const pretty=s=>s.replace(/sqrt/g,"√").replace(/asin/g,"sin⁻¹").replace(/acos/g,"cos⁻¹").replace(/atan/g,"tan⁻¹").replace(/acot/g,"cot⁻¹").replace(/pi/g,"π").replace(/E/g,"e").replace(/\*/g,"×").replace(/\//g,"÷").replace(/-/g,"−").replace(/\./g,",");
+function render(r,err){resultEl.textContent=r;resultEl.classList.toggle("error",!!err);exprEl.textContent=pretty(ex);exprEl.scrollLeft=exprEl.scrollWidth}
+function preview(){if(!ex)return"0";let s=ex.replace(/(?:[a-z]+\(|[+\-*/^(])+$/,"");if(!s)return"0";
+  const o=(s.match(/\(/g)||[]).length-(s.match(/\)/g)||[]).length;if(o>0)s+=")".repeat(o);
+  try{return fmt(evaluate(s))}catch{return"…"}}
+
+function input(k){
+  if(done){if(/^[0-9.(a-zA-Z]/.test(k))ex="";done=false}
+  const last=ex.slice(-1);
+  if(k==="."){const ln=ex.split(/[^0-9.]/).pop();if(ln.includes("."))return;if(!ln)ex+="0"}
+  if(/^[+*/^%!]$/.test(k)&&(ex===""||last==="(")&&!/^[%!]$/.test(k)&&false)return;
+  if(ex===""&&/^[%!^]$/.test(k))return;
+  if(/^[+\-*/]$/.test(k)){if(ex===""&&k!=="-")return;if(/[+\-*/]/.test(last))ex=ex.slice(0,-1)}
+  ex+=k;render(preview())}
+function equals(){if(!ex||done)return;
+  try{const v=evaluate(ex),t=fmt(v);addHist(pretty(ex),t);exprEl.textContent=pretty(ex)+" =";resultEl.textContent=t;resultEl.classList.remove("error");ex=String(Math.abs(v)<1e-12?0:parseFloat(v.toPrecision(15)));done=true}
+  catch{ex="";render("Ошибка",1);done=true}}
+function back(){if(done){ex="";done=false;return render("0")}
+  const m=ex.match(/(sinh|cosh|tanh|ncr|npr|gcd|lcm|asin|acos|atan|acot|sin|cos|tan|cot|sec|csc|ln|log|sqrt)\($|pi$/);
+  ex=ex.slice(0,m?-m[0].length:-1);render(preview())}
+function clr(){ex="";done=false;render("0")}
+
+$("main").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.action==="clear")return clr();if(b.dataset.action==="equals")return equals();if(b.dataset.key)input(b.dataset.key)});
+$("sci").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  if(b.id==="deg"){deg=!deg;b.textContent=deg?"DEG":"RAD";return render(preview())}
+  if(b.dataset.key)input(b.dataset.key)});
+// история и копирование
+let hist=[];try{hist=JSON.parse(localStorage.getItem("hist")||"[]")}catch{}
+if(!Array.isArray(hist))hist=[];
+const hs=$("hscrim"),hl=$("hlist"),toast=$("toast");let tt;
+function saveH(){try{localStorage.setItem("hist",JSON.stringify(hist))}catch{}}
+function addHist(e,r){if(exam)return;hist.unshift({e,r});hist=hist.slice(0,50);saveH()}
+function closeH(){hs.hidden=true}
+function renderH(){hl.innerHTML="";
+  if(!hist.length){hl.innerHTML='<div class="hempty">Пока пусто</div>';return}
+  hist.forEach(h=>{const b=document.createElement("button"),s=document.createElement("small"),v=document.createElement("b");
+    b.className="hi";s.textContent=h.e+" =";v.textContent=h.r;b.append(s,v);
+    b.onclick=()=>{ex=h.r.replace(",",".");done=true;exprEl.textContent=h.e+" =";resultEl.textContent=h.r;resultEl.classList.remove("error");closeH()};
+    hl.appendChild(b)})}
+$("hb").onclick=()=>{renderH();hs.hidden=false};
+$("hclr").onclick=()=>{hist=[];saveH();renderH()};
+$("hc").onclick=closeH;
+hs.addEventListener("click",e=>{if(e.target===hs)closeH()});
+function showToast(m){toast.textContent=m;toast.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>toast.classList.remove("on"),1600)}
+resultEl.title="Нажмите, чтобы скопировать";
+resultEl.onclick=async()=>{if(Date.now()-lastSwipe<400)return;const t=resultEl.textContent;if(resultEl.classList.contains("error")||!/\d/.test(t))return;
+  let ok=true;
+  try{await navigator.clipboard.writeText(t)}catch{const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();ok=false;try{ok=document.execCommand("copy")}catch{}a.remove()}
+  showToast(ok?"Скопировано: "+t:"Не удалось скопировать")};
+// единицы
+const mk=o=>Object.fromEntries(Object.entries(o).map(([n,f])=>[n,[x=>x*f,x=>x/f]]));
+const UN={"Длина":mk({"мм":.001,"см":.01,"м":1,"км":1000,"дюйм":.0254,"фут":.3048,"ярд":.9144,"миля":1609.344}),
+"Масса":mk({"мг":1e-6,"г":.001,"кг":1,"т":1000,"унция":.028349523,"фунт":.45359237}),
+"Температура":{"°C":[x=>x,x=>x],"°F":[x=>(x-32)*5/9,c=>c*9/5+32],"K":[x=>x-273.15,c=>c+273.15]},
+"Объём":mk({"мл":.001,"л":1,"м³":1000,"галлон (США)":3.785411784,"пинта (США)":.473176473,"чашка (США)":.2365882365}),
+"Площадь":mk({"см²":1e-4,"м²":1,"га":1e4,"км²":1e6,"фут²":.09290304,"акр":4046.8564224}),
+"Время":mk({"с":1,"мин":60,"ч":3600,"сут":86400,"нед":604800}),
+"Скорость":mk({"м/с":1,"км/ч":1/3.6,"миля/ч":.44704,"узел":.514444444}),
+"Данные":mk({"Б":1,"КБ":1024,"МБ":1048576,"ГБ":1073741824,"ТБ":1099511627776})};
+const us=$("uscrim"),uc=$("ucat"),ui=$("uin"),uo=$("uout"),uf=$("ufrom"),ut=$("uto");
+uc.innerHTML=[...Object.keys(UN),"Счисление"].map(k=>`<option>${k}</option>`).join("");
+function fillU(){ui.inputMode=uc.value==="Счисление"?"text":"decimal";if(uc.value==="Счисление"){uf.innerHTML=ut.innerHTML=[["Двоичная",2],["Восьмеричная",8],["Десятичная",10],["Шестнадцатеричная",16]].map(([n,b])=>`<option value="${b}">${n}</option>`).join("");uf.value="10";ut.value="2";conv();return}const o=Object.keys(UN[uc.value]).map(k=>`<option>${k}</option>`).join("");uf.innerHTML=ut.innerHTML=o;ut.selectedIndex=Math.min(1,ut.options.length-1);conv()}
+function conv(){if(uc.value==="Счисление"){const f=+uf.value,t=+ut.value,s=ui.value.trim().toLowerCase().replace(/^-/,""),neg=ui.value.trim().startsWith("-");const ok=s&&/^[0-9a-z]+$/.test(s)&&[...s].every(ch=>parseInt(ch,36)<f);uo.value=ok?(neg?"-":"")+parseInt(s,f).toString(t).toUpperCase():"";return}const v=parseFloat(ui.value.replace(",",".")),U=UN[uc.value];
+  uo.value=isNaN(v)?"":String(parseFloat(U[ut.value][1](U[uf.value][0](v)).toPrecision(10))).replace(".",",")}
+uc.onchange=fillU;ui.oninput=uf.onchange=ut.onchange=conv;
+$("uswap").onclick=()=>{const a=uf.value;uf.value=ut.value;ut.value=a;conv()};
+$("ub").onclick=()=>{const t=resultEl.textContent;ui.value=/^-?[\d,]+$/.test(t)?t:"1";fillU();us.hidden=false};
+$("uc").onclick=()=>{us.hidden=true};
+$("uin").addEventListener("input",()=>$("uuse").disabled=!$("uout").value);
+$("ufrom").addEventListener("change",()=>$("uuse").disabled=!$("uout").value);
+$("uto").addEventListener("change",()=>$("uuse").disabled=!$("uout").value);
+$("ucat").addEventListener("change",()=>$("uuse").disabled=!$("uout").value);
+$("usign").onclick=()=>{const v=ui.value.trim();ui.value=v.startsWith("-")?v.slice(1):"-"+v;conv()};
+$("uuse").onclick=()=>{if(!uo.value)return;const isB=uc.value==="Счисление",dv=isB?parseInt(uo.value,+ut.value):NaN;ex=isB?String(dv):uo.value.replace(",",".");done=true;exprEl.textContent=isB?`${ui.value} (${uf.options[uf.selectedIndex].text}) =`:ui.value+" "+uf.value+" =";resultEl.textContent=isB?String(dv):uo.value;resultEl.classList.remove("error");us.hidden=true};
+// кастомизация кнопок
+const G=[["num","Цифры",".num"],["op","Операции",".op"],["fn","Функции и AC",".fn"],["eq","Равно",".eq"],["sci","Научные",".s"],["mem","Память",".m"]];
+const SH={sharp:"6px",pill:"999px",blob:"48% 52% 36% 64% / 56% 40% 60% 44%"};
+let cust={shape:"soft",c:{}};try{Object.assign(cust,JSON.parse(localStorage.getItem("cust")||"{}"))}catch{}
+const cs=$("cscrim"),calc=document.querySelector(".calc");
+const lum=h=>{const n=parseInt(h.slice(1),16);return .299*(n>>16)+.587*(n>>8&255)+.114*(n&255)};
+const hexOf=s=>{const m=getComputedStyle(document.querySelector(s)).backgroundColor.match(/\d+/g)||[138,79,196];return"#"+m.slice(0,3).map(x=>(+x).toString(16).padStart(2,"0")).join("")};
+function saveC(){try{localStorage.setItem("cust",JSON.stringify(cust))}catch{}}
+function applyCust(){
+  if(SH[cust.shape]){calc.dataset.shape=cust.shape;calc.style.setProperty("--cbr",SH[cust.shape])}else{delete calc.dataset.shape;calc.style.removeProperty("--cbr")}
+  G.forEach(([k,,s])=>document.querySelectorAll(s).forEach(b=>{const c=cust.c[k];b.style.background=c||"";b.style.color=c?(lum(c)>150?"#2E2538":"#fff"):""}))}
+function buildCust(){const box=$("cbox");box.innerHTML="";
+  const sh=document.createElement("div");sh.className="shapes";
+  [["sharp","Острая"],["soft","Мягкая"],["pill","Капсула"],["blob","Капля"]].forEach(([id,n])=>{const b=document.createElement("button");b.className="opt chipo";b.textContent=n;b.setAttribute("aria-checked",cust.shape===id);b.onclick=()=>{cust.shape=id;saveC();applyCust();buildCust()};sh.appendChild(b)});
+  box.appendChild(sh);
+  G.forEach(([k,n,s])=>{const r=document.createElement("label"),t=document.createElement("span"),i=document.createElement("input");r.className="crow";t.textContent=n;i.type="color";i.value=cust.c[k]||hexOf(s);i.oninput=()=>{cust.c[k]=i.value;saveC();applyCust()};r.append(t,i);box.appendChild(r)})}
+$("cbtn").onclick=()=>{scrim.hidden=true;buildCust();cs.hidden=false};
+$("crst").onclick=()=>{cust={shape:"soft",c:{}};saveC();applyCust();buildCust();resetLay();resetSciOrder()};
+$("cc").onclick=()=>{cs.hidden=true};
+document.addEventListener("click",e=>{if(e.target.classList.contains("scrim"))e.target.hidden=true});
+// расположение кнопок
+const LAY=[["main","#main"],["mem","#mem"]],eb=$("edbar");let sel=null;
+document.querySelectorAll("#main button,#sci button,#mem button").forEach((b,i)=>b.dataset.i=i);
+function saveLay(){const o={};LAY.forEach(([k,s])=>o[k]=[...document.querySelector(s).children].map(b=>+b.dataset.i));try{localStorage.setItem("lay",JSON.stringify(o))}catch{}}
+function applyLay(o){LAY.forEach(([k,s])=>{const c=document.querySelector(s),m={};[...c.children].forEach(b=>m[b.dataset.i]=b);o[k].forEach(i=>m[i]&&c.appendChild(m[i]))})}
+function resetLay(){LAY.forEach(([,s])=>{const c=document.querySelector(s);[...c.children].sort((a,b)=>a.dataset.i-b.dataset.i).forEach(b=>c.appendChild(b))});try{localStorage.removeItem("lay")}catch{}}
+try{const o=JSON.parse(localStorage.getItem("lay")||"null");if(o&&LAY.every(([k,s])=>o[k]&&o[k].length===document.querySelector(s).children.length))applyLay(o)}catch{}
+function endEdit(){calc.classList.remove("edit");eb.hidden=true;if(sel)sel.classList.remove("sel");sel=null}
+$("lbtn").onclick=()=>{cs.hidden=true;$("sci").classList.add("on");$("mode").setAttribute("aria-pressed","true");calc.classList.add("edit");eb.hidden=false};
+$("edone").onclick=endEdit;
+calc.addEventListener("click",e=>{if(!calc.classList.contains("edit"))return;const b=e.target.closest("#main button,#sci button,#mem button");if(!b)return;e.stopPropagation();e.preventDefault();
+  if(!sel){sel=b;b.classList.add("sel");return}
+  if(sel===b){b.classList.remove("sel");sel=null;return}
+  if(sel.parentNode!==b.parentNode){sel.classList.remove("sel");sel=b;b.classList.add("sel");showToast("Меняйте кнопки внутри одного блока");return}
+  const ph=document.createElement("span");sel.replaceWith(ph);b.replaceWith(sel);ph.replaceWith(b);
+  sel.classList.remove("sel");sel=null;saveLay()},true);
+applyCust();
+// память
+function memUI(){$("mc").disabled=$("mr").disabled=mem===0}
+$("mem").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const a=b.dataset.m;
+  if(a==="c")mem=0;
+  else if(a==="r"){if(mem!==0)input(mem<0?`(${mem})`:String(mem))}
+  else{let v;try{v=evaluate(ex)}catch{return}if(!Number.isFinite(v))return;mem=parseFloat((mem+(a==="+"?v:-v)).toPrecision(12))}
+  memUI()});
+memUI();
+// график
+const gs=$("gscrim"),cv=$("cv"),gin=$("gin");
+let V={cx:0,cy:0,s:40},drag=null;
+const cssv=n=>{const t=GTHEMES[gcur];if(t&&t.o&&t.o[n])return t.o[n];return getComputedStyle(document.documentElement).getPropertyValue(n).trim()};
+function closeG(){gs.hidden=true}
+let savedDeg;
+function draw(){savedDeg=deg;try{drawI()}catch(e){}finally{deg=savedDeg;X=null}}
+function drawI(){
+  const r=cv.getBoundingClientRect(),d=devicePixelRatio||1;
+  cv.width=r.width*d;cv.height=r.height*d;
+  const c=cv.getContext("2d");c.scale(d,d);
+  const W=r.width,H=r.height,sx=x=>W/2+(x-V.cx)*V.s,sy=y=>H/2-(y-V.cy)*V.s;
+  const t=60/V.s,p=Math.pow(10,Math.floor(Math.log10(t))),m=t/p,st=(m<1.5?1:m<3.5?2:m<7.5?5:10)*p;
+  c.strokeStyle=c.fillStyle=cssv("--var");c.font="11px sans-serif";c.lineWidth=1;
+  const ax=sy(0),ay=sx(0);
+  for(let k=Math.ceil((V.cx-W/2/V.s)/st);k<=Math.floor((V.cx+W/2/V.s)/st);k++){const u=k*st,px=sx(u);c.globalAlpha=(k?0.15:0.7);c.beginPath();c.moveTo(px,0);c.lineTo(px,H);c.stroke();if(k){c.globalAlpha=1;c.fillText(String(+u.toPrecision(6)),px+2,Math.min(H-4,Math.max(12,ax+12)))}}
+  for(let k=Math.ceil((V.cy-H/2/V.s)/st);k<=Math.floor((V.cy+H/2/V.s)/st);k++){const u=k*st,py=sy(u);c.globalAlpha=(k?0.15:0.7);c.beginPath();c.moveTo(0,py);c.lineTo(W,py);c.stroke();if(k){c.globalAlpha=1;c.fillText(String(+u.toPrecision(6)),Math.min(W-34,Math.max(2,ay+4)),py-3)}}
+  c.globalAlpha=1;
+  const f=getF().toLowerCase().replace(/π/g,"pi").replace(/×/g,"*").replace(/÷/g,"/").replace(/−/g,"-").replace(/,/g,".").replace(/√/g,"sqrt");
+  const od=deg;deg=false;
+  c.strokeStyle=cssv("--primary");c.lineWidth=2.5;c.lineJoin="round";c.beginPath();
+  let pen=false,py0=0;
+  for(let i=0;i<=W;i++){X=V.cx+(i-W/2)/V.s;let y;try{y=evaluate(f)}catch{y=NaN}
+    if(!Number.isFinite(y)||Math.abs(sy(y))>H*5){pen=false;continue}
+    const q=sy(y);if(pen&&Math.abs(q-py0)<H*2)c.lineTo(i,q);else c.moveTo(i,q);pen=true;py0=q}
+  X=null;deg=od;c.stroke();drawExtra(c,W,H,sx,sy);dots(c,sx,sy,f);XP.forEach(p=>{const px=sx(p.x),py=sy(p.y);c.beginPath();c.arc(px,py,6,0,7);c.fillStyle=cssv("--text");c.fill();c.lineWidth=2;c.strokeStyle=cssv("--bg");c.stroke()})}
+function zoom(k){V.s=Math.min(2000,Math.max(2,V.s*k));draw()}
+cv.addEventListener("pointerdown",e=>{cv.setPointerCapture(e.pointerId);drag={x:e.clientX,y:e.clientY}});
+cv.addEventListener("pointermove",e=>{if(!drag)return;V.cx-=(e.clientX-drag.x)/V.s;V.cy+=(e.clientY-drag.y)/V.s;drag={x:e.clientX,y:e.clientY};draw()});
+cv.addEventListener("pointerup",()=>drag=null);
+cv.addEventListener("wheel",e=>{e.preventDefault();zoom(e.deltaY<0?1.15:1/1.15)},{passive:false});
+$("gzi").onclick=()=>zoom(1.4);$("gzo").onclick=()=>zoom(1/1.4);
+$("gr").onclick=()=>{V={cx:0,cy:0,s:40};draw()};
+$("gc").onclick=closeG;
+gin.addEventListener("input",draw);
+gs.addEventListener("click",e=>{if(e.target===gs)closeG()});
+$("gbtn").onclick=()=>{if(!done&&/x/.test(ex))gin.value=ex;gs.hidden=false;draw();updY();updQ()};
+// таблица значений и вопросы по графику
+let gx=["0","1","2"];
+const nf=v=>String(parseFloat(v.toPrecision(10))).replace(".",",");
+const xv=s=>{try{return evaluate(String(s).replace(/\s/g,"").replace(/,/g,"."))}catch{return NaN}};
+const getF=()=>gin.value.replace(/\s/g,"").replace(/^y=/i,"");
+function evalAt(f,v){const od=deg;deg=false;X=v;let y;try{y=evaluate(f)}catch{y=NaN}X=null;deg=od;return y}
+function roots(f,c){const n=2000,h=200/n,out=[];let z=0,px=-100,pv=evalAt(f,px)-c;if(pv===0){z++;out.push(px)}
+  for(let i=1;i<=n;i++){const x=-100+h*i,v=evalAt(f,x)-c;
+    if(v===0){z++;out.push(x)}
+    else if(Number.isFinite(pv)&&Number.isFinite(v)&&pv*v<0){let a=px,b=x,fa=pv;for(let k=0;k<60;k++){const m=(a+b)/2,fm=evalAt(f,m)-c;if(fa*fm<=0)b=m;else{a=m;fa=fm}}const r=(a+b)/2;if(Math.abs(evalAt(f,r)-c)<1e-6)out.push(r)}
+    px=x;pv=v}
+  if(z>n/2)return null;return out.filter((v,i)=>!i||Math.abs(v-out[i-1])>1e-6).slice(0,6)}
+function dots(c,sx,sy,f){c.font="12px sans-serif";gx.forEach(s=>{const x=xv(s);if(!Number.isFinite(x))return;const y=evalAt(f,x);if(!Number.isFinite(y))return;const px=sx(x),py=sy(y);c.beginPath();c.arc(px,py,5,0,7);c.fillStyle=cssv("--sc");c.fill();c.lineWidth=2;c.strokeStyle=cssv("--primary");c.stroke();c.fillStyle=cssv("--text");c.fillText(`(${nf(parseFloat(x.toFixed(2)))}; ${nf(parseFloat(y.toFixed(2)))})`,px+8,py-8-(Math.abs(Math.round(x))%2)*14)})}
+function updY(){const f=getF();gx.forEach((s,i)=>{const c=$("gy"+i);if(!c)return;const x=xv(s),y=Number.isFinite(x)?evalAt(f,x):NaN;c.textContent=Number.isFinite(y)?nf(parseFloat(y.toPrecision(6))):"—"})}
+function kindByText(f){if(!f)return"";if(/sin|cos|tan|cot/.test(f))return"Тригонометрическая функция: значения повторяются с некоторым периодом.";if(/ln|log/.test(f))return"Логарифмическая функция: определена только при положительном аргументе.";if(/\^x|e\^|exp|\d\^x/.test(f))return"Показательная функция: x стоит в показателе степени.";if(/sqrt|√/.test(f))return"Функция с корнем: определена при подкоренном выражении ≥ 0.";if(/\/x/.test(f))return"Обратная пропорциональность: график — гипербола, функция не определена при x = 0.";return"Нелинейная функция."}
+function updKind(f){const el=$("gkind");if(!f){el.textContent="";return}
+  const g=x=>evalAt(f,x),y0=g(0),y1=g(1),y2=g(2);
+  if(![y0,y1,y2].every(Number.isFinite)){el.textContent=kindByText(f);return}
+  const k=y1-y0,aQ=(y2-2*y1+y0)/2,bQ=k-aQ,tol=1e-7*(1+Math.abs(y0)+Math.abs(y1)+Math.abs(y2));
+  const xs=[-2,3,0.5];
+  const lin=xs.every(x=>Math.abs(g(x)-(k*x+y0))<=tol);
+  const quad=!lin&&xs.every(x=>Math.abs(g(x)-(aQ*x*x+bQ*x+y0))<=tol);
+  const coef=(c,v)=>Math.abs(c-1)<1e-9?v:Math.abs(c+1)<1e-9?"−"+v:nf(c).replace("-","−")+v;
+  const tail=c=>Math.abs(c)<1e-9?"":(c>0?" + ":" − ")+nf(Math.abs(c));
+  if(lin&&Math.abs(k)<1e-9){el.textContent=`Постоянная функция: y = ${nf(y0)}. График — горизонтальная прямая.`;return}
+  if(lin){el.textContent=`Линейная функция: y = ${coef(k,"x")}${tail(y0)}. k = ${nf(k)}: график ${k>0?"возрастает":"убывает"}. Точка пересечения с осью Y: (0; ${nf(y0)}).`;return}
+  if(quad){const bS=Math.abs(bQ)<1e-9?"":(bQ>0?" + ":" − ")+(Math.abs(Math.abs(bQ)-1)<1e-9?"":nf(Math.abs(bQ)))+"x";
+    el.textContent=`Квадратичная функция: y = ${coef(aQ,"x²")}${bS}${tail(y0)}. Ветви параболы вверх, если a > 0, и вниз, если a < 0. Вершина в x = ${nf(-bQ/(2*aQ))}.`;return}
+  for(let d=3;d<=4;d++){const c=polyFit(f,d);if(c){el.textContent=polyDesc(d,c);return}}
+  el.textContent=kindByText(f)}
+function solveLin(A,b){const n=b.length;for(let i=0;i<n;i++){let p=i;for(let r=i+1;r<n;r++)if(Math.abs(A[r][i])>Math.abs(A[p][i]))p=r;[A[i],A[p]]=[A[p],A[i]];[b[i],b[p]]=[b[p],b[i]];for(let r=0;r<n;r++){if(r===i)continue;const m=A[r][i]/A[i][i];if(!m)continue;for(let c=i;c<n;c++)A[r][c]-=m*A[i][c];b[r]-=m*b[i]}}return b.map((v,i)=>v/A[i][i])}
+function polyFit(f,d){const g=x=>evalAt(f,x),xs=[...Array(d+1).keys()],ys=xs.map(g);if(!ys.every(Number.isFinite))return null;
+  const A=xs.map(x=>Array.from({length:d+1},(_,j)=>x**j));const c=solveLin(A,[...ys]);if(!c.every(Number.isFinite))return null;
+  const tol=1e-6*(1+Math.max(...ys.map(Math.abs)));
+  const ok=[-2,-1.5,3,0.5].every(x=>{let s=0;for(let j=0;j<=d;j++)s+=c[j]*x**j;return Math.abs(g(x)-s)<=tol});
+  return ok?c:null}
+function polyDesc(d,c){const sup=["⁰","¹","²","³","⁴"];let s="";let first=true;
+  for(let j=d;j>=0;j--){const v=c[j];if(Math.abs(v)<1e-9)continue;const a=Math.abs(v);
+    const mag=(Math.abs(a-1)<1e-9&&j>0)?"":nf(a);const term=mag+(j>1?"x"+sup[j]:j===1?"x":"");
+    if(first){s+=(v<0?"−":"")+term}else{s+=" "+(v<0?"−":"+")+" "+term}first=false}
+  if(!s)s="0";
+  const name=d===3?"Кубическая функция":"Функция четвёртой степени";
+  const note=d===3?"График может иметь до двух точек экстремума (максимум и минимум).":"График может иметь до трёх точек экстремума.";
+  return `${name}: y = ${s}. ${note}`}
+function updQ(){const f=getF(),xs=roots(f,0);updKind(f.toLowerCase());
+  $("gq1").textContent="С осью X: "+(xs===null?"любая точка":xs.length?xs.map(x=>`(${nf(x)}; 0)`).join(", "):"нет пересечений");
+  const y0=evalAt(f,0);$("gq2").textContent="С осью Y: "+(Number.isFinite(y0)?`(0; ${nf(y0)})`:"нет пересечения");
+  const yv=xv($("gyv").value),r=Number.isFinite(yv)?roots(f,yv):undefined;
+  $("gxo").textContent=r===undefined?"—":r===null?"любое x":r.length?"x = "+r.map(nf).join("; "):"нет решений";
+  const xx=xv($("gxv").value),yy=Number.isFinite(xx)?evalAt(f,xx):NaN;
+  $("gyo").textContent=Number.isFinite(yy)?"y = "+nf(yy):"—"}
+function buildTbl(){const t=$("gt");t.style.gridTemplateColumns=`36px repeat(${gx.length},minmax(60px,1fr))`;t.innerHTML="";
+  const lx=document.createElement("div");lx.className="gl";lx.textContent="x";t.appendChild(lx);
+  gx.forEach((v,i)=>{const e=document.createElement("input");e.className="gin";e.value=v;e.inputMode="text";e.setAttribute("aria-label","x"+(i+1));e.oninput=()=>{gx[i]=e.value;updY();draw()};t.appendChild(e)});
+  const ly=document.createElement("div");ly.className="gl";ly.textContent="y";t.appendChild(ly);
+  gx.forEach((_,i)=>{const c=document.createElement("div");c.className="gy";c.id="gy"+i;t.appendChild(c)});updY()}
+$("gtp").onclick=()=>{if(gx.length>=6)return;const l=xv(gx[gx.length-1]);gx.push(Number.isFinite(l)?nf(l+1):"0");buildTbl();draw()};
+$("gtm").onclick=()=>{if(gx.length<=1)return;gx.pop();buildTbl();draw()};
+$("gyv").addEventListener("input",updQ);$("gxv").addEventListener("input",updQ);
+gin.addEventListener("input",()=>{updY();updQ();XP=[];$("gint").innerHTML=""});
+// дополнительные функции (до 20 всего, первая — фиолетовая)
+const FX=[],MAXF=20;
+const fcol=i=>{const t=GTHEMES[gcur];return `hsl(${(i*137.5)%360} ${t.s}% ${t.l}%)`};
+const funcStr=s=>(s||"").replace(/\s/g,"").replace(/^y=/i,"").toLowerCase();
+function drawExtra(c,W,H,sx,sy){FX.forEach((it,i)=>{if(!it.on)return;const f=funcStr(it.f);if(!f)return;const od2=deg;deg=false;c.strokeStyle=fcol(i);c.lineWidth=2.5;c.beginPath();let p2=false,q0=0;
+  for(let k=0;k<=W;k++){X=V.cx+(k-W/2)/V.s;let y;try{y=evaluate(f)}catch{y=NaN}if(!Number.isFinite(y)||Math.abs(sy(y))>H*5){p2=false;continue}const q=sy(y);if(p2&&Math.abs(q-q0)<H*2)c.lineTo(k,q);else c.moveTo(k,q);p2=true;q0=q}
+  X=null;deg=od2;c.stroke()})}
+function buildRows(){const box=$("flist");box.innerHTML="";
+  FX.forEach((it,i)=>{const row=document.createElement("div");row.className="frow";
+    const dot=document.createElement("span");dot.className="fdot";dot.style.background=fcol(i);
+    const inp=document.createElement("input");inp.className="gin";inp.value=it.f;inp.autocomplete="off";inp.autocapitalize="off";inp.spellcheck=false;inp.placeholder="функция, например cos(x)";inp.setAttribute("aria-label","Функция "+(i+2));
+    inp.oninput=()=>{it.f=inp.value;XP=[];$("gint").innerHTML="";draw()};
+    const tg=document.createElement("button");tg.className="fbtn";tg.textContent=it.on?"●":"○";tg.setAttribute("aria-label",it.on?"Скрыть":"Показать");
+    tg.onclick=()=>{it.on=!it.on;buildRows();draw()};
+    const del=document.createElement("button");del.className="fbtn fdel";del.textContent="×";del.setAttribute("aria-label","Удалить");
+    del.onclick=()=>{FX.splice(i,1);buildRows();draw()};
+    row.append(dot,inp,tg,del);box.appendChild(row)});
+  $("fadd").disabled=FX.length>=MAXF-1}
+$("fadd").onclick=()=>{if(FX.length>=MAXF-1)return;FX.push({f:"",on:true});buildRows()};
+buildRows();
+buildTbl();
+$("bs").onclick=back;
+$("mode").onclick=function(){const on=$("sci").classList.toggle("on");this.setAttribute("aria-pressed",on)};
+document.addEventListener("keydown",e=>{const o=document.querySelector(".scrim:not([hidden])");if(o){if(e.key==="Escape")o.hidden=true;return}
+  if(/^[0-9+\-*/()%^!.]$/.test(e.key))return input(e.key);
+  if(e.key===",")return input(/(gcd|lcm|ncr|npr)\([^()]*$/.test(ex)?",":".");
+  if(e.key==="Enter"||e.key==="="){e.preventDefault();return equals()}
+  if(e.key==="Backspace")return back();
+  if(e.key==="Escape"||e.key==="Delete")clr()});
+function fit(){resultEl.style.fontSize="";let z=parseFloat(getComputedStyle(resultEl).fontSize);while(resultEl.scrollWidth>resultEl.clientWidth&&z>16){z-=2;resultEl.style.fontSize=z+"px"}}
+new MutationObserver(fit).observe(resultEl,{childList:true,characterData:true,subtree:true});
+addEventListener("resize",fit);
+// кнопка «Назад»: закрывает окно, а не выходит из приложения
+const SCRIMS=[...document.querySelectorAll(".scrim")];
+SCRIMS.forEach(s=>new MutationObserver(()=>{
+  if(!s.hidden){if(!(history.state&&history.state.dlg))history.pushState({dlg:1},"")}
+  else if(history.state&&history.state.dlg&&!document.querySelector(".scrim:not([hidden])"))history.back()
+}).observe(s,{attributes:true,attributeFilter:["hidden"]}));
+addEventListener("popstate",()=>{const o=[...document.querySelectorAll(".scrim:not([hidden])")];if(o.length)o[o.length-1].hidden=true});
+// имя и иконка для установки на главный экран
+try{const icon=document.querySelector('link[rel="icon"]').href;
+  const mf=JSON.stringify({name:"Калькулятор",short_name:"Калькулятор",display:"standalone",start_url:location.href.split("#")[0],background_color:"#FBF6FC",theme_color:"#FBF6FC",icons:[{src:icon,sizes:"any",type:"image/svg+xml"}]});
+  const l=document.createElement("link");l.rel="manifest";l.href=URL.createObjectURL(new Blob([mf],{type:"application/manifest+json"}));document.head.appendChild(l)}catch{}
+// жесты: свайп в любую сторону по экрану вычислений стирает последний символ
+let sx0=null,sy0=null,lastSwipe=0;
+const dsp=document.querySelector(".display");
+dsp.addEventListener("pointerdown",e=>{sx0=e.clientX;sy0=e.clientY});
+dsp.addEventListener("pointercancel",()=>{sx0=null});
+dsp.addEventListener("pointerup",e=>{if(sx0===null)return;const dx=e.clientX-sx0,dy=e.clientY-sy0;sx0=null;if(Math.abs(dx)>50&&Math.abs(dy)<30){lastSwipe=Date.now();back()}});
+// статистика
+const sts=$("stscrim"),stin=$("stin"),stout=$("stout");
+function parseNums(s){const parts=s.trim().split(/[;\s]+/).filter(Boolean);const nums=parts.map(p=>Number(p.replace(",",".")));if(!parts.length||nums.some(n=>!Number.isFinite(n)))return null;return nums}
+function modeTxt(a){const m=new Map();a.forEach(x=>m.set(x,(m.get(x)||0)+1));const mx=Math.max(...m.values());if(mx===1&&a.length>1)return null;const modes=[...m].filter(([,c])=>c===mx).map(([x])=>x).sort((p,q)=>p-q);return modes.map(x=>String(parseFloat(x.toPrecision(10))).replace(".",",")).join("; ")}
+function statRows(a){const n=a.length,sum=a.reduce((x,y)=>x+y,0),mean=sum/n,so=[...a].sort((x,y)=>x-y),med=n%2?so[(n-1)/2]:(so[n/2-1]+so[n/2])/2;const ss=a.reduce((x,y)=>x+(y-mean)**2,0),pv=ss/n,sv=n>1?ss/(n-1):null;const r=v=>v===null?null:String(parseFloat(v.toPrecision(10))).replace(".",",");
+  return [["Количество",r(n)],["Сумма",r(sum)],["Среднее",r(mean)],["Медиана",r(med)],["Мода",modeTxt(a)],["Минимум",r(so[0])],["Максимум",r(so[n-1])],["Размах",r(so[n-1]-so[0])],["Дисперсия (генеральная)",r(pv)],["Дисперсия (выборочная)",r(sv)],["Стандартное отклонение (генеральное)",r(Math.sqrt(pv))],["Стандартное отклонение (выборочное)",sv===null?null:r(Math.sqrt(sv))]]}
+function renderSt(){stout.innerHTML="";const txt=stin.value.trim();if(!txt)return;const a=parseNums(txt);if(!a){stout.innerHTML='<div class="hempty">Проверьте числа: разделяйте их пробелом или «;»<\/div>';return}
+  statRows(a).forEach(([k,v])=>{const b=document.createElement("button"),s=document.createElement("small"),bb=document.createElement("b");b.className="hi";s.textContent=k;bb.textContent=v===null?"—":v;b.append(s,bb);
+    if(v!==null&&!v.includes(";"))b.onclick=()=>{ex=v.replace(",",".");done=true;exprEl.textContent=k+" =";resultEl.textContent=v;resultEl.classList.remove("error");sts.hidden=true};else b.disabled=true;stout.appendChild(b)})}
+stin.addEventListener("input",renderSt);
+$("stbtn").onclick=()=>{renderSt();sts.hidden=false};
+$("stc").onclick=()=>{sts.hidden=true};
+// кредит и вклад
+const fs=$("fscrim"),fout=$("fout");
+const num=id=>parseFloat($(id).value.trim().replace(",","."));
+const money=v=>String(parseFloat(v.toFixed(2))).replace(".",",");
+function finRows(){const o=[];
+  const S=num("ls"),R=num("lr"),N=num("ln");
+  if(S>0&&R>=0&&N>0&&Number.isFinite(S)&&Number.isFinite(R)&&Number.isFinite(N)){const r=R/1200;const p=r===0?S/N:S*r/(1-Math.pow(1+r,-N));const tot=p*N;o.push(["Ежемесячный платёж",money(p)],["Переплата",money(tot-S)],["Всего выплат",money(tot)])}
+  const DS=num("ds"),DR=num("dr"),DY=num("dy");
+  if(DS>0&&DR>=0&&DY>0&&Number.isFinite(DS)&&Number.isFinite(DR)&&Number.isFinite(DY)){const tot=DS*Math.pow(1+DR/1200,12*DY);o.push(["Итог вклада",money(tot)],["Доход",money(tot-DS)])}
+  return o}
+function renderF(){fout.innerHTML="";const o=finRows();if(!o.length){fout.innerHTML='<div class="hempty">Заполните сумму, ставку и срок для кредита или вклада<\/div>';return}
+  o.forEach(([k,v])=>{const b=document.createElement("button"),s=document.createElement("small"),bb=document.createElement("b");b.className="hi";s.textContent=k;bb.textContent=v;b.append(s,bb);
+    b.onclick=()=>{ex=v.replace(",",".");done=true;exprEl.textContent=k+" =";resultEl.textContent=v;resultEl.classList.remove("error");fs.hidden=true};fout.appendChild(b)})}
+fs.querySelectorAll("input").forEach(i=>i.addEventListener("input",renderF));
+$("fbtn").onclick=()=>{renderF();fs.hidden=false};
+$("fc").onclick=()=>{fs.hidden=true};
+// квадратное уравнение
+const qs=$("qscrim"),qout=$("qout"),qhint=$("qhint");
+const qv=id=>{const t=$(id).value.trim().replace(",",".");return t===""?0:parseFloat(t)};
+const qok=id=>{const t=$(id).value.trim();return t===""||Number.isFinite(parseFloat(t.replace(",",".")))};
+function solveQ(a,b,c){const rows=[];let info="";
+  if(a===0){if(b===0){info=c===0?"Любое x подходит: решений бесконечно много.":"Решений нет: уравнение неверно при любом x."}
+    else{rows.push(["x",nf(-c/b),true]);info="Уравнение не квадратное (a = 0), решаем как линейное."}
+    return {rows,info}}
+  const D=b*b-4*a*c,vx=-b/(2*a),vy=c-b*b/(4*a);
+  rows.push(["D = b² − 4ac",nf(D),false]);
+  if(D>=0){const sq=Math.sqrt(D),x1=(-b-sq)/(2*a),x2=(-b+sq)/(2*a);
+    if(D===0){rows.push(["x",nf(x1),true]);info="Один корень (D = 0)."}
+    else{rows.push(["x₁",nf(Math.min(x1,x2)),true],["x₂",nf(Math.max(x1,x2)),true]);info="Два действительных корня."}}
+  else{const re=-b/(2*a),im=Math.sqrt(-D)/(2*Math.abs(a));rows.push(["x₁",`${nf(re)} − ${nf(im)}i`,false],["x₂",`${nf(re)} + ${nf(im)}i`,false]);info="Действительных корней нет, есть комплексные."}
+  rows.push(["Вершина x",nf(vx),true],["Вершина y",nf(vy),true]);
+  return {rows,info}}
+function renderQ(){qout.innerHTML="";qhint.textContent="";
+  if(!qok("qa")||!qok("qb")||!qok("qc")){qhint.textContent="Проверьте значения: в поля можно вводить только числа.";return}
+  const {rows,info}=solveQ(qv("qa"),qv("qb"),qv("qc"));qhint.textContent=info;
+  rows.forEach(([k,v,ins])=>{const b=document.createElement("button"),s=document.createElement("small"),bb=document.createElement("b");b.className="hi";s.textContent=k;bb.textContent=v;b.append(s,bb);
+    if(ins)b.onclick=()=>{ex=v.replace(",",".");done=true;exprEl.textContent=k+" =";resultEl.textContent=v;resultEl.classList.remove("error");qs.hidden=true};else b.disabled=true;qout.appendChild(b)})}
+["qa","qb","qc"].forEach(id=>$(id).addEventListener("input",renderQ));
+$("qbtn").onclick=()=>{renderQ();qs.hidden=false};
+$("qc2").onclick=()=>{qs.hidden=true};
+$("qgr").onclick=()=>{const a=qv("qa"),b=qv("qb"),c=qv("qc");let s="";const add=(k,t)=>{if(k===0)return;s+=(k>0&&s?"+":"")+(t&&Math.abs(k)===1?(k<0?"-":""):String(k))+t};add(a,"x^2");add(b,"x");add(c,"");gin.value=s||"0";qs.hidden=true;gs.hidden=false;draw();updY();updQ()};
+// точки пересечения графиков
+let XP=[];
+function enabledFuncs(){const L=[];const p=getF().toLowerCase();if(p)L.push({name:"1",f:p});FX.forEach((it,i)=>{const f=funcStr(it.f);if(it.on&&f)L.push({name:String(i+2),f})});return L}
+function findInts(){const L=enabledFuncs(),box=$("gint");box.innerHTML="";XP=[];
+  if(L.length<2){box.textContent="Чтобы найти пересечения, включите хотя бы две функции.";draw();return}
+  const out=[];
+  for(let i=0;i<L.length;i++)for(let j=i+1;j<L.length;j++){
+    const xs=roots(`(${L[i].f})-(${L[j].f})`,0);if(xs===null)continue;
+    xs.forEach(x=>{const y=evalAt(L[i].f,x);if(Number.isFinite(y))out.push({x,y,pair:`f${L[i].name} и f${L[j].name}`})})}
+  XP=out;
+  if(!out.length){box.textContent="Пересечений не найдено на отрезке от −100 до 100 по оси x.";draw();return}
+  out.forEach(p=>{const b=document.createElement("button"),s=document.createElement("small"),bb=document.createElement("b");b.className="hi";s.textContent=p.pair;bb.textContent=`(${nf(p.x)}; ${nf(p.y)})`;b.append(s,bb);
+    b.onclick=()=>{ex=nf(p.x).replace(",",".");done=true;exprEl.textContent=`x = ${nf(p.x)}`;resultEl.textContent=nf(p.x);resultEl.classList.remove("error");gs.hidden=true};box.appendChild(b)});
+  draw()}
+$("fint").onclick=findInts;
+// дроби: точные рациональные вычисления
+const dfs=$("dfscrim"),dfin=$("dfin"),dfout=$("dfout"),dfhint=$("dfhint");
+const rgcd=(a,b)=>{a=Math.abs(a);b=Math.abs(b);while(b){[a,b]=[b,a%b]}return a};
+const rn=(n,d)=>{if(d===0)throw new Error("zero");if(d<0){n=-n;d=-d}const g=rgcd(n,d)||1;n/=g;d/=g;if(!Number.isSafeInteger(n)||!Number.isSafeInteger(d))throw new Error("big");return{n,d}};
+const radd=(a,b)=>rn(a.n*b.d+b.n*a.d,a.d*b.d),rsub=(a,b)=>rn(a.n*b.d-b.n*a.d,a.d*b.d),rmul=(a,b)=>rn(a.n*b.n,a.d*b.d),rdiv=(a,b)=>{if(b.n===0)throw new Error("zero");return rn(a.n*b.d,a.d*b.n)};
+function fracEval(src){
+  const T=src.match(/\d+(?:\.\d+)?|[+\-*/()%^!]/g);if(!T||T.join("")!==src)throw new Error("syntax");
+  let i=0;const pk=()=>T[i],nx=()=>T[i++];
+  const num=t=>{const[a,b=""]=t.split(".");return rn(parseInt(a+b,10),10**b.length)};
+  function expr(){let v=term();while(pk()==="+"||pk()==="-"){const o=nx(),r=term();v=o==="+"?radd(v,r):rsub(v,r)}return v}
+  function term(){let v=unary();while(pk()==="*"||pk()==="/"){const o=nx(),r=unary();v=o==="*"?rmul(v,r):rdiv(v,r)}return v}
+  function unary(){if(pk()==="-"){nx();const v=unary();return rn(-v.n,v.d)}if(pk()==="+"){nx();return unary()}return pow()}
+  function pow(){const b=post();if(pk()==="^"){nx();const e=unary();if(e.d!==1||Math.abs(e.n)>60)throw new Error("syntax");let r={n:1,d:1};for(let k=0;k<Math.abs(e.n);k++)r=rmul(r,b);return e.n<0?rdiv({n:1,d:1},r):r}return b}
+  function post(){let v=prim();while(pk()==="%"||pk()==="!"){const o=nx();if(o==="%")v=rdiv(v,{n:100,d:1});else{if(v.d!==1||v.n<0||v.n>20)throw new Error("syntax");let f=1;for(let k=2;k<=v.n;k++)f*=k;v={n:f,d:1}}}return v}
+  function prim(){const t=nx();if(t==="("){const v=expr();if(nx()!==")")throw new Error("syntax");return v}if(t===undefined||!/^\d/.test(t))throw new Error("syntax");return num(t)}
+  const v=expr();if(i!==T.length)throw new Error("syntax");return v}
+const fsign=r=>r.n<0?"−":"";
+const fracTxt=r=>r.d===1?`${fsign(r)}${Math.abs(r.n)}`:`${fsign(r)}${Math.abs(r.n)}/${r.d}`;
+const mixedTxt=r=>{const a=Math.abs(r.n),w=Math.floor(a/r.d),m=a%r.d;if(m===0)return `${fsign(r)}${w}`;if(w===0)return fracTxt(r);return `${fsign(r)}${w} ${m}/${r.d}`};
+function decTxt(r){const sg=fsign(r),a=Math.abs(r.n),d=r.d,ip=Math.floor(a/d);let rem=a%d;let digits="";const seen=new Map();
+  while(rem!==0){if(seen.has(rem)){const s=seen.get(rem);return `${sg}${ip},${digits.slice(0,s)}(${digits.slice(s)})`.replace(",()","")}
+    if(digits.length>=60)return `${sg}${ip},${digits}…`;seen.set(rem,digits.length);rem*=10;digits+=String(Math.floor(rem/d));rem%=d}
+  return `${sg}${ip}${digits?","+digits:""}`}
+function renderDF(){dfout.innerHTML="";dfhint.textContent="";
+  const src=dfin.value.trim().replace(/\s/g,"").replace(/,/g,".").replace(/×/g,"*").replace(/÷/g,"/").replace(/−/g,"-");
+  if(!src)return;
+  let r;try{r=fracEval(src)}catch(e){dfhint.textContent=e.message==="zero"?"Деление на ноль.":e.message==="big"?"Числа слишком большие для точной дроби.":"Не получилось разобрать выражение: используйте числа, + − × ÷, скобки, ^ и %.";return}
+  const rows=[["Обыкновенная",fracTxt(r)]];
+  if(r.d!==1&&Math.abs(r.n)>=r.d)rows.push(["Смешанная",mixedTxt(r)]);
+  rows.push(["Десятичная",decTxt(r)]);
+  rows.forEach(([k,v])=>{const b=document.createElement("button"),s=document.createElement("small"),bb=document.createElement("b");b.className="hi";s.textContent=k;bb.textContent=v;b.append(s,bb);
+    b.onclick=()=>{ex=`(${r.n}/${r.d})`;done=true;exprEl.textContent=dfin.value.trim()+" =";resultEl.textContent=v;resultEl.classList.remove("error");dfs.hidden=true};dfout.appendChild(b)})}
+dfin.addEventListener("input",renderDF);
+$("dfbtn").onclick=()=>{dfin.value=(/^[\d.+\-*/()%^]+$/.test(ex)&&ex)?ex.replace(/\*/g,"×").replace(/\//g,"÷").replace(/-/g,"−").replace(/\./g,","):"";renderDF();dfs.hidden=false};
+$("dfc").onclick=()=>{dfs.hidden=true};
+// таблица значений
+const tbs=$("tbscrim"),tbf=$("tbf"),tbout=$("tbout"),tbhint=$("tbhint");
+const tbn=id=>{const t=$(id).value.trim().replace(",",".");return t===""?NaN:parseFloat(t)};
+function renderTB(){tbout.innerHTML="";tbhint.textContent="";
+  const f=funcStr(tbf.value),a=tbn("tbfrom"),b=tbn("tbto"),h=tbn("tbstep");
+  if(!f){tbhint.textContent="Введите формулу, например x^2-4.";return}
+  if(![a,b,h].every(Number.isFinite)){tbhint.textContent="Заполните «от», «до» и «шаг» числами.";return}
+  if(h<=0){tbhint.textContent="Шаг должен быть больше нуля.";return}
+  if(b<a){tbhint.textContent="«До» должно быть больше или равно «от».";return}
+  const n=Math.floor((b-a)/h+1e-9)+1;
+  if(n>200){tbhint.textContent=`Слишком много строк (${n}). Увеличьте шаг, максимум 200.`;return}
+  const hd=document.createElement("div");hd.className="trow thead";hd.innerHTML="<span>x</span><span>y</span>";tbout.appendChild(hd);
+  for(let i=0;i<n;i++){const x=parseFloat((a+i*h).toPrecision(12)),y=evalAt(f,x),xs=nf(x),ys=Number.isFinite(y)?nf(y):"—";
+    const row=document.createElement("button");row.className="trow";const c1=document.createElement("span"),c2=document.createElement("span");c1.textContent=xs;c2.textContent=ys;row.append(c1,c2);
+    if(Number.isFinite(y))row.onclick=()=>{ex=nf(y).replace(",",".");done=true;exprEl.textContent=`y(${xs}) =`;resultEl.textContent=ys;resultEl.classList.remove("error");tbs.hidden=true};else row.disabled=true;
+    tbout.appendChild(row)}
+  tbhint.textContent=`Строк: ${n}. Тап по строке вставляет y в калькулятор.`}
+[tbf,$("tbfrom"),$("tbto"),$("tbstep")].forEach(el=>el.addEventListener("input",renderTB));
+$("tbbtn").onclick=()=>{tbf.value=gin.value||"x^2";renderTB();tbs.hidden=false};
+$("tbc").onclick=()=>{tbs.hidden=true};
+$("tbgr").onclick=()=>{gin.value=funcStr(tbf.value);tbs.hidden=true;gs.hidden=false;draw();updY();updQ()};
+// системы уравнений двух переменных (правило Крамера)
+const sysd=$("sysd"),sysout=$("sysout"),syshint=$("syshint");
+const sv=id=>{const t=$(id).value.trim().replace(",",".");return t===""?0:parseFloat(t)};
+const sok=id=>{const t=$(id).value.trim();return t===""||Number.isFinite(parseFloat(t.replace(",",".")))};
+function solveSys(a1,b1,c1,a2,b2,c2){
+  if((a1===0&&b1===0&&c1!==0)||(a2===0&&b2===0&&c2!==0))return{kind:"none"};
+  if(a1===0&&b1===0&&a2===0&&b2===0)return{kind:"inf"};
+  const D=a1*b2-a2*b1;
+  if(D!==0)return{kind:"one",D,Dx:c1*b2-c2*b1,Dy:a1*c2-a2*c1,x:(c1*b2-c2*b1)/D,y:(a1*c2-a2*c1)/D};
+  const M1=a1*c2-a2*c1,M2=b1*c2-b2*c1;
+  return(M1===0&&M2===0)?{kind:"inf"}:{kind:"none"}}
+const eqS=(a,b,c)=>{let s="";const add=(k,t)=>{if(k===0)return;s+=(s?(k>0?" + ":" − "):(k<0?"−":""))+(Math.abs(k)===1?"":nf(Math.abs(k)))+t};add(a,"x");add(b,"y");if(!s)s="0";return `${s} = ${nf(c)}`};
+function renderSys(){sysout.innerHTML="";syshint.textContent="";
+  if(!(["sa1","sb1","sc1","sa2","sb2","sc2"].every(sok))){syshint.textContent="Проверьте значения: в поля можно вводить только числа.";return}
+  const a1=sv("sa1"),b1=sv("sb1"),c1=sv("sc1"),a2=sv("sa2"),b2=sv("sb2"),c2=sv("sc2");
+  const eq=document.createElement("div");eq.style.cssText="padding:4px 12px 8px;font-size:16px";eq.textContent=`${eqS(a1,b1,c1)}   |   ${eqS(a2,b2,c2)}`;sysout.appendChild(eq);
+  const r=solveSys(a1,b1,c1,a2,b2,c2);
+  if(r.kind==="none"){syshint.textContent="Решений нет: прямые параллельны.";return}
+  if(r.kind==="inf"){syshint.textContent="Бесконечно много решений: уравнения задают одну и ту же прямую.";return}
+  syshint.textContent="Единственное решение. Тап по x или y вставляет значение в калькулятор.";
+  [["D",nf(r.D),false],["Dx",nf(r.Dx),false],["Dy",nf(r.Dy),false],["x",nf(r.x),true],["y",nf(r.y),true]].forEach(([k,v,ins])=>{const b=document.createElement("button"),s=document.createElement("small"),bb=document.createElement("b");b.className="hi";s.textContent=k;bb.textContent=v;b.append(s,bb);
+    if(ins)b.onclick=()=>{ex=v.replace(",",".");done=true;exprEl.textContent=k+" =";resultEl.textContent=v;resultEl.classList.remove("error");sysd.hidden=true};else b.disabled=true;sysout.appendChild(b)})}
+["sa1","sb1","sc1","sa2","sb2","sc2"].forEach(id=>$(id).addEventListener("input",renderSys));
+$("sysbtn").onclick=()=>{renderSys();sysd.hidden=false};
+$("sysc").onclick=()=>{sysd.hidden=true};
+$("sysgr").onclick=()=>{const lineF=(a,b,c)=>b===0?null:`(${c}-(${a})*x)/(${b})`;
+  const L=[lineF(sv("sa1"),sv("sb1"),sv("sc1")),lineF(sv("sa2"),sv("sb2"),sv("sc2"))].filter(Boolean);
+  if(!L.length){syshint.textContent="Обе прямые вертикальные (b = 0), на графике их не покажу.";return}
+  gin.value=L[0];if(L[1]&&FX.length<MAXF-1)FX.push({f:L[1],on:true});buildRows();
+  sysd.hidden=true;gs.hidden=false;draw();updY();updQ()};
+// производная и интеграл (численно)
+const dvs=$("dvscrim"),dvf=$("dvf"),dvout=$("dvout"),dvhint=$("dvhint");
+const dvn=id=>{const t=$(id).value.trim().replace(",",".");return t===""?NaN:parseFloat(t)};
+let dvLast=null;
+function renderDV(){dvout.innerHTML="";dvhint.textContent="";dvLast=null;
+  const f=funcStr(dvf.value);
+  if(!f){dvhint.textContent="Введите функцию, например x^2 или sin(x).";return}
+  const x0=dvn("dvx0"),a=dvn("dva"),b=dvn("dvb"),info=[],rows=[];
+  if(Number.isFinite(x0)){
+    const y0=evalAt(f,x0),h=1e-5*Math.max(1,Math.abs(x0)),yp=evalAt(f,x0+h),ym=evalAt(f,x0-h);
+    if(![y0,yp,ym].every(Number.isFinite))info.push("В этой точке функция не определена.");
+    else{const d=(yp-ym)/(2*h),dl=(y0-ym)/h,dr=(yp-y0)/h;
+      if(Math.abs(dl-dr)>1e-3*(1+Math.abs(d)))info.push("Слева и справа от точки наклон разный: производной в ней может не быть.");
+      dvLast={f,x0,y0,d};
+      rows.push(["f(x₀)",nf(y0),true],["f′(x₀)",nf(d),true],["Касательная",`y = ${nf(d)}·(x − ${nf(x0)}) + ${nf(y0)}`,false]);}
+  }
+  if(Number.isFinite(a)&&Number.isFinite(b)){
+    if(a===b)rows.push([`∫ от ${nf(a)} до ${nf(a)}`,"0",true]);
+    else{const N=2000,hh=(b-a)/N;let s=evalAt(f,a)+evalAt(f,b);
+      for(let i=1;i<N;i++)s+=(i%2?4:2)*evalAt(f,a+i*hh);
+      const I=s*hh/3;
+      if(Number.isFinite(I))rows.push([`∫ от ${nf(a)} до ${nf(b)}`,nf(I),true]);
+      else info.push("Интеграл не вычисляется: функция не определена или уходит в бесконечность на отрезке.");}
+  }
+  if(!rows.length&&!info.length)info.push("Укажите x₀ для производной или пределы «от» и «до» для интеграла.");
+  dvhint.textContent=info.join(" ");
+  rows.forEach(([k,v,ins])=>{const b=document.createElement("button"),s=document.createElement("small"),bb=document.createElement("b");b.className="hi";s.textContent=k;bb.textContent=v;b.append(s,bb);
+    if(ins)b.onclick=()=>{ex=v.replace(",",".");done=true;exprEl.textContent=k+" =";resultEl.textContent=v;resultEl.classList.remove("error");dvs.hidden=true};else b.disabled=true;dvout.appendChild(b)})}
+[dvf,$("dvx0"),$("dva"),$("dvb")].forEach(el=>el.addEventListener("input",renderDV));
+$("dvbtn").onclick=()=>{dvf.value=gin.value||"x^2";renderDV();dvs.hidden=false};
+$("dvc").onclick=()=>{dvs.hidden=true};
+$("dvgr").onclick=()=>{if(!dvLast){dvhint.textContent="Сначала укажите точку x₀, в которой есть производная.";return}
+  gin.value=dvLast.f;if(FX.length<MAXF-1)FX.push({f:`${dvLast.d}*(x-(${dvLast.x0}))+(${dvLast.y0})`,on:true});buildRows();
+  dvs.hidden=true;gs.hidden=false;draw();updY();updQ()};
+// физические константы
+const KS=[["Ускорение свободного падения","g","9.80665","м/с²"],["Скорость света","c","299792458","м/с"],["Постоянная Планка","h","6.62607015e-34","Дж·с"],["Гравитационная постоянная","G","6.6743e-11","Н·м²/кг²"],["Постоянная Больцмана","k","1.380649e-23","Дж/К"],["Число Авогадро","N_A","6.02214076e23","1/моль"],["Универсальная газовая постоянная","R","8.314462618","Дж/(моль·К)"],["Элементарный заряд","e₀","1.602176634e-19","Кл"],["Масса электрона","m_e","9.1093837015e-31","кг"],["Масса протона","m_p","1.67262192369e-27","кг"],["Электрическая постоянная","ε₀","8.8541878128e-12","Ф/м"],["Магнитная постоянная","μ₀","1.25663706212e-6","Н/А²"],["Нормальное атмосферное давление","atm","101325","Па·"]];
+const KSUP={"0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵","6":"⁶","7":"⁷","8":"⁸","9":"⁹","-":"⁻","+":""};
+const kpretty=v=>{const[m,e]=v.split("e");const mm=m.replace(".",",");if(!e)return mm;return `${mm}·10${[...e].map(ch=>KSUP[ch]).join("")}`};
+function insertConst(v){if(done)done=false;const last=ex.slice(-1);if(ex&&/[0-9)eπ]/.test(last))ex+="*";ex+=v;render(preview())}
+const kscrim=$("kscrim"),kq=$("kq"),kout=$("kout");
+function renderK(q){kout.innerHTML="";const s=q.trim().toLowerCase();
+  const list=KS.filter(([n,sym])=>!s||n.toLowerCase().includes(s)||sym.toLowerCase().includes(s));
+  if(!list.length){kout.innerHTML='<div class="hempty">Ничего не найдено</div>';return}
+  list.forEach(([n,sym,v,u])=>{const b=document.createElement("button"),s1=document.createElement("small"),bb=document.createElement("b");b.className="hi";s1.textContent=`${n} (${sym}), ${u}`;bb.textContent=kpretty(v);b.append(s1,bb);
+    b.onclick=()=>{insertConst(v);kscrim.hidden=true};kout.appendChild(b)})}
+kq.addEventListener("input",()=>renderK(kq.value));
+$("kbtn").onclick=()=>{kq.value="";renderK("");kscrim.hidden=false};
+$("kc").onclick=()=>{kscrim.hidden=true};
+// экспорт: график в PNG и история в текстовый файл
+async function saveFile(name,mime,blob){
+  if(window.Android&&Android.save){
+    const b64=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(String(fr.result).split(",")[1]);fr.readAsDataURL(blob)});
+    Android.save(name,mime,b64);return}
+  const file=new File([blob],name,{type:mime});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:name});return}catch(e){if(e.name==="AbortError")return}}
+  const dataUrl=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(blob)});
+  const a=document.createElement("a");a.href=dataUrl;a.download=name;document.body.appendChild(a);a.click();a.remove();
+  showToast("Файл сохранён: "+name)}
+$("gpng").onclick=()=>{const t=document.createElement("canvas");t.width=cv.width;t.height=cv.height;const c=t.getContext("2d");
+  c.fillStyle=cssv("--surface")||"#F6EEF9";c.fillRect(0,0,t.width,t.height);c.drawImage(cv,0,0);
+  t.toBlob(b=>{if(b)saveFile("график.png","image/png",b)},"image/png")};
+$("hexp").onclick=()=>{if(!hist.length){showToast("История пуста");return}
+  const when=new Date().toLocaleString("ru-RU");
+  const text="\uFEFF"+[`История вычислений (${when})`,"",...hist.map(h=>`${h.e} = ${h.r}`)].join("\n");
+  saveFile("история.txt","text/plain",new Blob([text],{type:"text/plain"}))};
+// группы научной панели (сворачиваются)
+(function(){
+  const sci=$("sci"),kids=[...sci.children];
+  const TOOL=["stbtn","fbtn","qbtn","dfbtn","tbbtn","sysbtn","dvbtn","kbtn","gbtn"];
+  const isTool=b=>TOOL.includes(b.id)||b.dataset.key===","||b.dataset.key==="x";
+  const isComb=b=>["ncr(","npr(","gcd(","lcm("].includes(b.dataset.key);
+  const groups=[["Функции и тригонометрия",[]],["Комбинаторика и НОД",[]],["Инструменты",[]]];
+  kids.forEach(b=>{groups[isTool(b)?2:isComb(b)?1:0][1].push(b)});
+  sci.innerHTML="";
+  let saved={};try{saved=JSON.parse(localStorage.getItem("sciGroups")||"{}")}catch{}
+  groups.forEach(([title,items],gi)=>{
+    const wrap=document.createElement("div");wrap.className="sgrp";
+    const head=document.createElement("button");head.className="ghead";head.textContent=title;
+    const body=document.createElement("div");body.className="gbody";body.hidden=!saved[gi];
+    head.setAttribute("aria-expanded",String(!body.hidden));
+    head.onclick=()=>{body.hidden=!body.hidden;head.setAttribute("aria-expanded",String(!body.hidden));saved[gi]=!body.hidden;try{localStorage.setItem("sciGroups",JSON.stringify(saved))}catch{}};
+    items.forEach(b=>body.appendChild(b));
+    wrap.append(head,body);sci.appendChild(wrap)});
+})();
+// темы графиков и режим экзамена
+const GTHEMES={
+  classic:{name:"Классика",s:70,l:60,o:null},
+  print:{name:"Печать (белый фон)",s:20,l:35,o:{"--surface":"#FFFFFF","--high":"#FFFFFF","--primary":"#1B1B1B","--var":"#9E9E9E","--text":"#111111","--sc":"#B0B0B0","--bg":"#FFFFFF"}},
+  contrast:{name:"Контраст",s:100,l:60,o:{"--surface":"#111111","--high":"#111111","--primary":"#00E5FF","--var":"#555555","--text":"#FFFFFF","--sc":"#FF4081","--bg":"#000000"}},
+  pastel:{name:"Пастель",s:55,l:70,o:{"--surface":"#FFF8F0","--high":"#FFF8F0","--primary":"#8E7CC3","--var":"#CFC6D9","--text":"#4A4458","--sc":"#F4B6C2","--bg":"#FFF8F0"}},
+  ocean:{name:"Океан",s:70,l:45,o:{"--surface":"#E8F4F8","--high":"#E8F4F8","--primary":"#0077B6","--var":"#B7D3DE","--text":"#0B2E3F","--sc":"#90E0EF","--bg":"#E8F4F8"}}
+};
+let gcur="classic";try{if(GTHEMES[localStorage.getItem("gtheme")])gcur=localStorage.getItem("gtheme")}catch{}
+const gthm=$("gthm");
+Object.entries(GTHEMES).forEach(([k,t])=>{const o=document.createElement("option");o.value=k;o.textContent=t.name;gthm.appendChild(o)});
+function setGTheme(k){gcur=k;try{localStorage.setItem("gtheme",k)}catch{}const o=GTHEMES[k].o;cv.style.background=o?o["--high"]:"";buildRows();draw()}
+gthm.value=gcur;gthm.onchange=()=>setGTheme(gthm.value);
+cv.style.background=GTHEMES[gcur].o?GTHEMES[gcur].o["--high"]:"";
+let exam=false;try{exam=localStorage.getItem("exam")==="1"}catch{}
+function applyExam(){document.body.classList.toggle("exam",exam);const eb=$("exbtn");eb.textContent="Режим экзамена: "+(exam?"вкл":"выкл");eb.setAttribute("aria-pressed",String(exam))}
+$("exbtn").onclick=()=>{exam=!exam;try{localStorage.setItem("exam",exam?"1":"0")}catch{}applyExam();showToast(exam?"Режим экзамена: история и подсказки скрыты":"Режим экзамена выключен")};
+applyExam();
+// порядок кнопок внутри групп научной панели (запоминается)
+(function(){
+  const bodies=[...document.querySelectorAll("#sci .gbody")];
+  const cur=b=>[...b.children].map(x=>+x.dataset.i);
+  function applyOrd(){let ord=null;try{ord=JSON.parse(localStorage.getItem("sciOrder")||"null")}catch{}
+    if(!Array.isArray(ord)||ord.length!==bodies.length)return;
+    bodies.forEach((b,gi)=>{const want=ord[gi]||[],map={};[...b.children].forEach(x=>map[x.dataset.i]=x);
+      if(want.length===b.children.length&&want.every(i=>map[i]))want.forEach(i=>b.appendChild(map[i]))})}
+  const save=()=>{try{localStorage.setItem("sciOrder",JSON.stringify(bodies.map(cur)))}catch{}};
+  applyOrd();
+  bodies.forEach(b=>new MutationObserver(save).observe(b,{childList:true}));
+  window.resetSciOrder=()=>{try{localStorage.removeItem("sciOrder")}catch{}bodies.forEach(b=>[...b.children].sort((p,q)=>p.dataset.i-q.dataset.i).forEach(x=>b.appendChild(x)))};
+})();
+// смена знака (±)
+function toggleSign(){
+  if(done){if(!ex)return;ex=ex.startsWith("-")?ex.slice(1):"-"+ex;render(preview());return}
+  if(ex===""){ex="-";render(preview());return}
+  const w=ex.match(/\(-(\d*\.?\d+(?:e[+-]?\d+)?)\)$/);
+  if(w){ex=ex.slice(0,-w[0].length)+w[1];render(preview());return}
+  const m=ex.match(/(\d*\.?\d+(?:e[+-]?\d+)?)$/);
+  if(m){ex=ex.slice(0,-m[0].length)+"(-"+m[1]+")";render(preview());return}
+  showToast("Здесь нельзя изменить знак");
+}
+$("sgn").onclick=toggleSign;
+// состояние
+function saveState(){try{localStorage.setItem("state",JSON.stringify({mem,deg,ex,done,sci:$("sci").classList.contains("on")}))}catch{}}
+["click","keydown"].forEach(t=>document.addEventListener(t,()=>setTimeout(saveState,0),true));
+addEventListener("pagehide",saveState);
+document.addEventListener("visibilitychange",()=>{if(document.hidden)saveState()});
+try{const st=JSON.parse(localStorage.getItem("state")||"null");if(st){
+  mem=Number.isFinite(+st.mem)?+st.mem:0;deg=st.deg!==false;ex=typeof st.ex==="string"?st.ex:"";done=!!st.done&&!!ex;
+  if(st.sci){$("sci").classList.add("on");$("mode").setAttribute("aria-pressed","true")}
+  $("deg").textContent=deg?"DEG":"RAD"}}catch{}
+memUI();
+if(ex){try{if(done){resultEl.textContent=fmt(evaluate(ex));exprEl.textContent=""}else render(preview())}catch{ex="";done=false;render("0")}}else render("0");
+fit();
+</script>
+</body>
+</html>
