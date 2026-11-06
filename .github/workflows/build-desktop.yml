@@ -1,0 +1,63 @@
+name: Build Desktop
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "desktop/**"
+      - "app/src/main/assets/index.html"
+      - ".github/workflows/build-desktop.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: --win
+          - os: ubuntu-latest
+            target: --linux
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Extra packages (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfuse2 || sudo apt-get install -y libfuse2t64 || true
+
+      - name: Copy calculator page
+        shell: bash
+        run: |
+          mkdir -p desktop/app
+          cp app/src/main/assets/index.html desktop/app/index.html
+
+      - name: Install dependencies
+        working-directory: desktop
+        run: npm install --no-audit --no-fund
+
+      - name: Build
+        working-directory: desktop
+        run: npx electron-builder ${{ matrix.target }} --publish never
+
+      - name: Upload builds
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.os }}
+          if-no-files-found: error
+          path: |
+            desktop/dist/*.exe
+            desktop/dist/*.AppImage

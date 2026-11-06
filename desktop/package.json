@@ -1,0 +1,45 @@
+{
+  "name": "m3-calculator-desktop",
+  "version": "1.0.0",
+  "description": "Калькулятор в стиле Material 3",
+  "main": "main.js",
+  "author": "factsaime",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.narezany.calcm3",
+    "productName": "Калькулятор",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "app/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "calculator-m3-${version}-setup.${ext}"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Utility",
+      "artifactName": "calculator-m3-${version}.${ext}"
+    }
+  }
+}
