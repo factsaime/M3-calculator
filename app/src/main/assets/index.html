@@ -138,8 +138,8 @@ canvas{width:100%;height:240px;border-radius:20px;background:var(--high);touch-a
     <button class="s" data-key="cot(">cot</button><button class="s" data-key="acot(">cot⁻¹</button><button class="s" data-key="sec(">sec</button><button class="s" data-key="csc(">csc</button>
     <button class="s" data-key="ln(">ln</button><button class="s" data-key="log(">log</button><button class="s" data-key="pi">π</button><button class="s" data-key="E">e</button>
     <button class="s" data-key="^2">x²</button><button class="s" data-key="!">n!</button><button class="s" data-key="^(-1)">1/x</button><button class="s" id="deg">DEG</button>
-    <button class="s" data-key="sinh(">sinh</button><button class="s" data-key="cosh(">cosh</button><button class="s" data-key="tanh(">tanh</button><button class="s" data-key="abs(">|x|</button><button class="s" data-key="ncr(">nCr</button><button class="s" data-key="npr(">nPr</button><button class="s" data-key="gcd(">НОД</button><button class="s" data-key="lcm(">НОК</button><button class="s" data-key="%">%</button><button class="s" data-key="," style="grid-column:span 3">,</button><button class="s" id="stbtn" style="grid-column:span 4">Статистика</button><button class="s" id="fbtn" style="grid-column:span 4">Кредит и вклад</button><button class="s" id="qbtn" style="grid-column:span 4">Квадратное уравнение</button><button class="s" id="dfbtn" style="grid-column:span 4">Дроби</button><button class="s" id="tbbtn" style="grid-column:span 4">Таблица значений</button><button class="s" id="sysbtn" style="grid-column:span 4">Системы уравнений</button><button class="s" id="dvbtn" style="grid-column:span 4">Производная и интеграл</button><button class="s" id="kbtn" style="grid-column:span 4">Константы</button>
-    <button class="s" data-key="x">x</button><button class="s" data-key=")">)</button><button class="s wide" id="gbtn">График y = f(x)</button>
+    <button class="s" data-key="sinh(">sinh</button><button class="s" data-key="cosh(">cosh</button><button class="s" data-key="tanh(">tanh</button><button class="s" data-key="abs(">|x|</button><button class="s" data-key="ncr(">nCr</button><button class="s" data-key="npr(">nPr</button><button class="s" data-key="gcd(">НОД</button><button class="s" data-key="lcm(">НОК</button><button class="s" data-key="%" style="grid-column:span 2">%</button><button class="s" data-key="," style="grid-column:span 2">,</button><button class="s" id="stbtn" style="grid-column:span 4">Статистика</button><button class="s" id="fbtn" style="grid-column:span 4">Кредит и вклад</button><button class="s" id="qbtn" style="grid-column:span 4">Квадратное уравнение</button><button class="s" id="dfbtn" style="grid-column:span 4">Дроби</button><button class="s" id="tbbtn" style="grid-column:span 4">Таблица значений</button><button class="s" id="sysbtn" style="grid-column:span 4">Системы уравнений</button><button class="s" id="dvbtn" style="grid-column:span 4">Производная и интеграл</button><button class="s" id="kbtn" style="grid-column:span 4">Константы</button>
+    <button class="s" data-key="x">x</button><button class="s wide" id="gbtn">График y = f(x)</button>
   </div>
 
   <div class="grid" id="main">
@@ -283,10 +283,20 @@ function preview(){if(!ex)return"0";let s=ex.replace(/(?:[a-z]+\(|[+\-*/^(])+$/,
 function input(k){
   if(done){if(/^[0-9.(a-zA-Z]/.test(k))ex="";done=false}
   const last=ex.slice(-1);
-  if(k==="."){const ln=ex.split(/[^0-9.]/).pop();if(ln.includes("."))return;if(!ln)ex+="0"}
-  if(/^[+*/^%!]$/.test(k)&&(ex===""||last==="(")&&!/^[%!]$/.test(k)&&false)return;
-  if(ex===""&&/^[%!^]$/.test(k))return;
-  if(/^[+\-*/]$/.test(k)){if(ex===""&&k!=="-")return;if(/[+\-*/]/.test(last))ex=ex.slice(0,-1)}
+  const open=(ex.match(/\(/g)||[]).length-(ex.match(/\)/g)||[]).length;
+  const endsVal=ex!==""&&(/[0-9)%!]/.test(last)||/(?:pi|e|x)$/.test(ex));
+  if(k===")"){if(open<=0)return;ex+=k;return render(preview())}
+  if(k==="."){
+    const ln=ex.split(/[^0-9.]/).pop();
+    if(ln.includes("."))return;
+    if(!ln){if(endsVal)return;ex+="0"}
+    else if(!/[0-9]$/.test(ex))return;
+    ex+=k;return render(preview())}
+  if(/^[+*/^%!]$/.test(k)&&!endsVal)return;
+  if(/^[+\-*/]$/.test(k)){
+    if(ex===""&&k!=="-")return;
+    if(last==="("&&k!=="-")return;
+    if(/[+\-*/]$/.test(last))ex=ex.slice(0,-1)}
   ex+=k;render(preview())}
 function equals(){if(!ex||done)return;
   try{const v=evaluate(ex),t=fmt(v);addHist(pretty(ex),t);exprEl.textContent=pretty(ex)+" =";resultEl.textContent=t;resultEl.classList.remove("error");ex=String(Math.abs(v)<1e-12?0:parseFloat(v.toPrecision(15)));done=true}
@@ -763,7 +773,7 @@ $("hexp").onclick=()=>{if(!hist.length){showToast("История пуста");r
 (function(){
   const sci=$("sci"),kids=[...sci.children];
   const TOOL=["stbtn","fbtn","qbtn","dfbtn","tbbtn","sysbtn","dvbtn","kbtn","gbtn"];
-  const isTool=b=>TOOL.includes(b.id)||b.dataset.key===","||b.dataset.key==="x";
+  const isTool=b=>TOOL.includes(b.id)||["%",",","x"].includes(b.dataset.key);
   const isComb=b=>["ncr(","npr(","gcd(","lcm("].includes(b.dataset.key);
   const groups=[["Функции и тригонометрия",[]],["Комбинаторика и НОД",[]],["Инструменты",[]]];
   kids.forEach(b=>{groups[isTool(b)?2:isComb(b)?1:0][1].push(b)});
@@ -809,16 +819,31 @@ applyExam();
   bodies.forEach(b=>new MutationObserver(save).observe(b,{childList:true}));
   window.resetSciOrder=()=>{try{localStorage.removeItem("sciOrder")}catch{}bodies.forEach(b=>[...b.children].sort((p,q)=>p.dataset.i-q.dataset.i).forEach(x=>b.appendChild(x)))};
 })();
-// смена знака (±)
+// смена знака (±): работает с числом, функцией или скобкой в конце выражения
+function lastOperandStart(s){
+  let d=0;
+  for(let i=s.length-1;i>=0;i--){
+    const ch=s[i];
+    if(ch===")"){d++;continue}
+    if(ch==="("){
+      if(d===0){let j=i;while(j>0&&/[a-z]/.test(s[j-1]))j--;return j}
+      d--;continue}
+    if(d===0&&"+-*/^,".includes(ch)){
+      const p=s.slice(0,i);
+      const unary=ch==="-"&&(p===""||/[+\-*/^(,]$/.test(p));
+      return unary?i:i+1}
+  }
+  return 0}
 function toggleSign(){
   if(done){if(!ex)return;ex=ex.startsWith("-")?ex.slice(1):"-"+ex;render(preview());return}
   if(ex===""){ex="-";render(preview());return}
-  const w=ex.match(/\(-(\d*\.?\d+(?:e[+-]?\d+)?)\)$/);
-  if(w){ex=ex.slice(0,-w[0].length)+w[1];render(preview());return}
-  const m=ex.match(/(\d*\.?\d+(?:e[+-]?\d+)?)$/);
-  if(m){ex=ex.slice(0,-m[0].length)+"(-"+m[1]+")";render(preview());return}
-  showToast("Здесь нельзя изменить знак");
-}
+  const i=lastOperandStart(ex),pre=ex.slice(0,i),seg=ex.slice(i);
+  if(!seg)return showToast("Здесь нельзя изменить знак");
+  const wrapped=seg.match(/^\(-(.+)\)$/);
+  if(wrapped){ex=pre+wrapped[1];return render(preview())}
+  if(seg[0]==="-"){ex=pre+seg.slice(1);return render(preview())}
+  if(pre===""||/[+\-*/^(,]$/.test(pre)){ex=pre+"-"+seg;return render(preview())}
+  ex=pre+"-("+seg+")";render(preview())}
 $("sgn").onclick=toggleSign;
 // состояние
 function saveState(){try{localStorage.setItem("state",JSON.stringify({mem,deg,ex,done,sci:$("sci").classList.contains("on")}))}catch{}}
